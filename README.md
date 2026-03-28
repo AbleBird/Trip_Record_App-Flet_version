@@ -1,11 +1,8 @@
-# 2025-BasicGroup-SpringApp-C250070
-春休みのオリジナルアプリです。
+# Trip Record App (Flet version)
+This application works under **Python 3.13.7** and **Flet 0.28.2**
 
-## アップデート情報
-### 3/18
-Fletのアップデートにより3/7に上げた最終版が3/14に動作しなくなったため、修正の上で新環境に対応したバージョンを上げました。
+## Update information
+### 3/28
+TripTopPage: Version 1.0 completed
 
-### 3/26 
-TripTopPageのVersion 1.0が完成しました。
-
-## 使い方
+## How to use
