@@ -1,8 +1,8 @@
 # pages/home_page.py
 
 import flet as ft
-from components.home_state import HomeState
-from components.home_logic import (
+from components.home.home_state import HomeState
+from components.home.home_logic import (
     normalize_date,
     make_display_name,
     fetch_trips,

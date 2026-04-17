@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 DB_PATH = "travel.db"
 
-
 # ---------------------------------------------------------
 # 指定日の行を 0,1,2,3... と再採番する
 # ---------------------------------------------------------
@@ -75,8 +74,8 @@ def initialize_trip(trip_id: int):
         cur.execute("""
             INSERT INTO trip_rows
             (trip_id, class_id, order_base, order_index,
-             planned_time, actual_time, place, by, cost, point, note, image, video)
-            VALUES (?, 0, ?, ?, ?, ?, '', '', '', '', '', '', '')
+             planned_time, actual_time, place, by, point, note, image, video)
+            VALUES (?, 0, ?, ?, ?, ?, '', '', '', '', '', '')
         """, (trip_id, order_base, order_base + 0.0, date_str, date_str))
 
         # fixed（上）
@@ -84,8 +83,8 @@ def initialize_trip(trip_id: int):
         cur.execute("""
             INSERT INTO trip_rows
             (trip_id, class_id, order_base, order_index,
-             planned_time, actual_time, place, by, cost, point, note, image, video)
-            VALUES (?, 1, ?, ?, '', '', '', '', '', '', '', '', '')
+             planned_time, actual_time, place, by, point, note, image, video)
+            VALUES (?, 1, ?, ?, '', '', '', '', '', '', '', '')
         """, (trip_id, order_base, order_base + 0.1))
 
         # middle
@@ -93,8 +92,8 @@ def initialize_trip(trip_id: int):
         cur.execute("""
             INSERT INTO trip_rows
             (trip_id, class_id, order_base, order_index,
-             planned_time, actual_time, place, by, cost, point, note, image, video)
-            VALUES (?, 2, ?, ?, '', '', '', '', '', '', '', '', '')
+             planned_time, actual_time, place, by, point, note, image, video)
+            VALUES (?, 2, ?, ?, '', '', '', '', '', '', '', '')
         """, (trip_id, order_base, order_base + 0.2))
 
         # fixed（下）
@@ -102,8 +101,8 @@ def initialize_trip(trip_id: int):
         cur.execute("""
             INSERT INTO trip_rows
             (trip_id, class_id, order_base, order_index,
-             planned_time, actual_time, place, by, cost, point, note, image, video)
-            VALUES (?, 1, ?, ?, '', '', '', '', '', '', '', '', '')
+             planned_time, actual_time, place, by, point, note, image, video)
+            VALUES (?, 1, ?, ?, '', '', '', '', '', '', '', '')
         """, (trip_id, order_base, order_base + 0.1))
 
     conn.commit()
@@ -117,9 +116,10 @@ def fetch_rows(trip_id: int):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
+    #by-point間にあったcostを消去
     cur.execute("""
         SELECT id, class_id, order_base, order_index,
-               planned_time, actual_time, place, by, cost, point, note, image, video
+               planned_time, actual_time, place, by, point, note, image, video
         FROM trip_rows
         WHERE trip_id = ?
         ORDER BY order_index ASC
@@ -155,8 +155,8 @@ def add_middle_row(trip_id: int, above_row_id: int):
     cur.execute("""
         INSERT INTO trip_rows
         (trip_id, class_id, order_base, order_index,
-         planned_time, actual_time, place, by, cost, point, note, image, video)
-        VALUES (?, 2, ?, ?, '', '', '', ?, '', '', '', '', '')
+         planned_time, actual_time, place, by, point, note, image, video)
+        VALUES (?, 2, ?, ?, '', '', '', ?, '', '', '', '')
     """, (trip_id, new_order_base, new_order_index, new_by))
 
     # 追加した日の day_index を求める
@@ -227,11 +227,17 @@ def update_cell(row_id: int, column: str, value: str):
         """, (row_id,))
 
     else:
+        if column == "cost":
+            # cost は廃止
+            conn.close()
+            return
+
         cur.execute(f"""
             UPDATE trip_rows
             SET {column} = ?
             WHERE id = ?
         """, (value, row_id))
+
 
     conn.commit()
     conn.close()
@@ -245,9 +251,10 @@ def sanitize_rows(rows):
     for row in rows:
         (
             row_id, class_id, order_base, order_index,
-            planned, actual, place, by, cost, point, note, image, video
+            planned, actual, place, by, point, note, image, video
         ) = row
 
+        #costを消去
         result.append({
             "id": row_id,
             "type": class_id,
@@ -256,7 +263,6 @@ def sanitize_rows(rows):
             "actual_time": actual or "",
             "place": place or "",
             "by": by or "",
-            "cost": cost or "",
             "point": point or "",
             "note": note or "",
             "image": image or "",

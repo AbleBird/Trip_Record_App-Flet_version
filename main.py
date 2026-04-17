@@ -1,11 +1,15 @@
 import flet as ft
 from pages.home_page import HomePage
 from pages.trip_top_page import TripTopPage
-from db.database import init_db
+from db.travel_database import init_travel_db
+from db.cost_database import init_cost_db
+from pages.cost_mode_page import CostModePage
+from pages.transport_cost_page import TransportCostMode
 
 def main(page: ft.Page):
     print("MAIN STARTED")
-    init_db()
+    init_travel_db()
+    init_cost_db()
 
     # ページ全体の背景を白に
     page.bgcolor = ft.Colors.WHITE
@@ -34,7 +38,42 @@ def main(page: ft.Page):
                 )
             )
 
-        # TripTopPage（/trip/<id>）
+        # ★ 交通費専用モード
+        elif "/cost/transport/" in page.route:
+            try:
+                parts = page.route.split("/")
+                trip_id = int(parts[2])
+                date = parts[5]
+            except:
+                trip_id = None
+                date = None
+
+            page.views.append(
+                ft.View(
+                    route=page.route,
+                    controls=[TransportCostMode(page, trip_id, date)],
+                    bgcolor=ft.Colors.WHITE,
+                    scroll=ft.ScrollMode.AUTO,   # ★ 追加
+                )
+            )
+
+
+        # ★ まず cost モードを先に判定
+        elif page.route.startswith("/trip/") and page.route.endswith("/cost"):
+            try:
+                trip_id = int(page.route.split("/")[2])
+            except:
+                trip_id = None
+
+            page.views.append(
+                ft.View(
+                    route=f"/trip/{trip_id}/cost",
+                    controls=[CostModePage(page, trip_id)],
+                    bgcolor=ft.Colors.WHITE,
+                )
+            )
+
+        # ★ 次に TripTopPage（/trip/<id>）
         elif page.route.startswith("/trip/"):
             try:
                 trip_id = int(page.route.split("/")[2])
@@ -50,7 +89,7 @@ def main(page: ft.Page):
             )
 
         page.update()
-        
+            
     page.on_route_change = route_change
 
     page.go("/")

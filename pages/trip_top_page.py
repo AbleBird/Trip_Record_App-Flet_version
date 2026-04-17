@@ -1,7 +1,7 @@
 import flet as ft
-from components.basic_table import BasicTable
-from components import row_manager
-from components.table_state import init_state, toggle_middle, show_middle, rebuild
+from components.toppage.basic_table import BasicTable
+from components.toppage import row_manager
+from components.toppage.table_state import init_state, toggle_middle, show_middle, rebuild
 
 
 # ---------------------------------------------------------
@@ -103,6 +103,7 @@ def TripTopPage(page: ft.Page, trip_id: int):
         "金額計算モード",
         bgcolor=ft.Colors.GREEN,
         color=ft.Colors.WHITE,
+        on_click=lambda e: page.go(f"/trip/{trip_id}/cost"),
     )
 
     media_mode_button = ft.ElevatedButton(

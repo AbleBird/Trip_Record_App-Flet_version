@@ -2,7 +2,7 @@ import sqlite3
 
 DB_PATH = "travel.db"
 
-def init_db():
+def init_travel_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
@@ -20,7 +20,7 @@ def init_db():
     """)
 
     # -------------------------
-    # Trip 内行テーブル（新仕様）
+    # Trip 内行テーブル（新仕様・cost廃止後）
     # -------------------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS trip_rows (
@@ -40,7 +40,6 @@ def init_db():
             actual_time TEXT,
             place TEXT,
             by TEXT,
-            cost TEXT,
             point TEXT,
             note TEXT,
             image TEXT,

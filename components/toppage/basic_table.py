@@ -1,8 +1,7 @@
 import flet as ft
-from components.table_logic import should_collapse, should_show_collapsed_row, build_collapsed_row
+from components.toppage.table_logic import should_collapse, should_show_collapsed_row, build_collapsed_row
 
 print("BasicTable loaded from:", __file__)
-
 
 def BasicTable(
     rows_data,
@@ -55,7 +54,6 @@ def BasicTable(
             ft.Container(width=col_widths[7], height=48),
             ft.Container(width=col_widths[8], height=48),
             ft.Container(width=col_widths[9], height=48),
-            ft.Container(width=col_widths[10], height=48),
         ]
 
         delete_cell = ft.Container(
@@ -81,14 +79,14 @@ def BasicTable(
     # 列幅
     # -------------------------
     col_widths = [
-        50, 50, 70, 70, 150, 180, 80, 80, 250, 80, 80, 50
+        50, 50, 70, 70, 150, 180, 80, 250, 80, 80, 50
     ]
 
     # -------------------------
     # ヘッダー
     # -------------------------
     header_labels = ["", "種別", "planned", "actual", "place", "by",
-                     "cost", "point", "note", "image", "video", ""]
+                    "point", "note", "image", "video", ""]
 
     header_row = ft.Row(
         controls=[
@@ -223,36 +221,29 @@ def BasicTable(
                 color=ft.Colors.BLACK,
             ),
             ft.TextField(
-                value=safe(row.get("cost")),
-                width=col_widths[6],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "cost", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
                 value=safe(row.get("point")),
-                width=col_widths[7],
+                width=col_widths[6],
                 height=48,
                 on_blur=lambda e, idx=i: on_edit(idx, "point", e.control.value),
                 color=ft.Colors.BLACK,
             ),
             ft.TextField(
                 value=safe(row.get("note")),
-                width=col_widths[8],
+                width=col_widths[7],
                 height=48,
                 on_blur=lambda e, idx=i: on_edit(idx, "note", e.control.value),
                 color=ft.Colors.BLACK,
             ),
             ft.TextField(
                 value=safe(row.get("image")),
-                width=col_widths[9],
+                width=col_widths[8],
                 height=48,
                 on_blur=lambda e, idx=i: on_edit(idx, "image", e.control.value),
                 color=ft.Colors.BLACK,
             ),
             ft.TextField(
                 value=safe(row.get("video")),
-                width=col_widths[10],
+                width=col_widths[9],
                 height=48,
                 on_blur=lambda e, idx=i: on_edit(idx, "video", e.control.value),
                 color=ft.Colors.BLACK,
