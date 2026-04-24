@@ -1,49 +1,20 @@
 import flet as ft
+from components.cost.cost_logic import (
+    init_row_state, toggle_reorder_state, make_up_handler, make_down_handler, reorder_row,
+)
+from components.cost.cost_state import (
+    init_reorder_state, toggle_reorder_state
+)
 
-TYPE_OPTIONS = ["食費", "宿泊費", "お土産代", "その他諸費"]
-
-# 6列構造
-COL_WIDTHS = [140, 200, 200, 150, 150, 200]   # Type, Title, Item, Amount, Cumulative, Note
-DELETE_WIDTH = 50
-HANDLE_WIDTH = 80
-
-# ▼ ボタンサイズ（完全固定）
-BTN_SIZE = 28
-ICON_SIZE = 20     # ← 見た目の大きさ（小さく見える）
-
-def make_icon_button(icon, on_click, visible=True, disabled=False):
-    return ft.Container(
-        width=BTN_SIZE,
-        height=BTN_SIZE,
-        visible=visible,
-        alignment=ft.alignment.center,
-        padding=0,
-        content=ft.TextButton(
-            content=ft.Icon(
-                icon,
-                size=ICON_SIZE,
-                color=ft.Colors.GREY_700 if not disabled else ft.Colors.GREY_400,
-            ),
-            style=ft.ButtonStyle(
-                padding=0,
-                bgcolor={ft.ControlState.DEFAULT: ft.Colors.TRANSPARENT},
-                overlay_color=ft.Colors.TRANSPARENT,
-                shape=ft.RoundedRectangleBorder(radius=0),
-            ),
-            on_click=on_click if (visible and not disabled) else None,
-        ),
-    )
-
-def cell(content, width, bgcolor=None, align=ft.alignment.center_left):
-    return ft.Container(
-        content=content,
-        width=width,
-        height=56,
-        bgcolor=bgcolor,
-        padding=5,
-        alignment=align,
-        border=ft.border.all(1, ft.Colors.BLACK),
-    )
+from components.cost.cost_rows import (
+    make_date_row,
+    make_transport_row,
+    make_other_cost_row,
+    make_add_row,
+)
+from components.cost.common.cost_elements import cell
+from components.cost.common.cost_elements import make_icon_button
+from components.cost.common.cost_elements import COL_WIDTHS, TYPE_OPTIONS
 
 
 def CostTable(
@@ -72,13 +43,13 @@ def CostTable(
                     weight=ft.FontWeight.BOLD,
                     color=ft.Colors.BLACK,
                 ),
-                width=sum(COL_WIDTHS[:4]),
+                width=sum(COL_WIDTHS[:5])+ 135,
                 alignment=ft.alignment.center_left,
             ),
             ft.Container(
                 content=ft.TextField(
                     value=currency,
-                    width=120,
+                    width=200,
                     height=40,
                     text_align=ft.TextAlign.CENTER,
                     color=ft.Colors.BLACK,
@@ -103,69 +74,12 @@ def CostTable(
         # -------------------------
         # 日付行（外枠のみ）
         # -------------------------
-        table_rows.append(
-            ft.Row(
-                [
-                    ft.Container(width=84),  # 操作列は空
-                    cell(
-                        ft.Text(date, size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                        width=sum(COL_WIDTHS[:3]),
-                        bgcolor=ft.Colors.GREY_200,
-                    ),
-                    cell(ft.Text(""), width=COL_WIDTHS[3], bgcolor=ft.Colors.GREY_200),
-                    cell(ft.Text(""), width=COL_WIDTHS[4], bgcolor=ft.Colors.GREY_200),
-                    cell(ft.Text(""), width=COL_WIDTHS[5], bgcolor=ft.Colors.GREY_200),
-                ],
-                spacing=0,
-            )
-        )
+        table_rows.append(make_date_row(date))
 
         # -------------------------
         # 交通費行（6列）
         # -------------------------
-        table_rows.append(
-            ft.Row(
-                [
-                    ft.Container(width=84),  # 操作列は空
-                    cell(
-                        ft.Text("交通費", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[0],
-                        bgcolor=ft.Colors.ORANGE_100,
-                        align=ft.alignment.center,
-                    ),
-                    cell(
-                        ft.ElevatedButton(
-                            "交通費専用モードへ",
-                            bgcolor=ft.Colors.BLUE,
-                            color=ft.Colors.WHITE,
-                            on_click=lambda e, d=date: on_open_transport(d),
-                        ),
-                        width=COL_WIDTHS[1],
-                        bgcolor=ft.Colors.ORANGE_100,
-                    ),
-                    cell(
-                        ft.Text("総額", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[2],
-                        bgcolor=ft.Colors.ORANGE_100,
-                    ),
-                    cell(
-                        ft.Text(f"{transport_amount:,} 円", color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[3],
-                        bgcolor=ft.Colors.ORANGE_100,
-                        align=ft.alignment.center_right,
-                    ),
-                    cell(ft.Text(""), width=COL_WIDTHS[4], bgcolor=ft.Colors.ORANGE_100),
-                    cell(ft.Text(""), width=COL_WIDTHS[5], bgcolor=ft.Colors.ORANGE_100),
-                ],
-                spacing=0,
-            )
-        )
-
-        def make_up_handler(d, i):
-            return lambda e: on_reorder(d, i, i-1)
-
-        def make_down_handler(d, i):
-            return lambda e: on_reorder(d, i, i+1)
+        table_rows.append(make_transport_row(date, transport_amount, on_open_transport))
 
         # -------------------------
         # その他費用行（操作列は枠線なし）
@@ -173,17 +87,21 @@ def CostTable(
         for idx, row in enumerate(rows):
             row_id = row["id"]
 
-            can_move_up = idx > 0
-            can_move_down = idx < len(rows) - 1
+            can_up = idx > 0
+            can_down = idx < len(rows) - 1
 
-            # ▼ 並べ替え状態
-            if "reorder_open" not in row:
-                row["reorder_open"] = False
+            # ▼ 状態初期化
+            init_row_state(row)
+            
+            can_move_up_flag = can_up
+            can_move_down_flag = can_down
 
+            # ▼ 並べ替えモード切り替え
             def toggle_reorder(e, r=row):
-                r["reorder_open"] = not r["reorder_open"]
-                up_btn.visible = r["reorder_open"]
-                down_btn.visible = r["reorder_open"]
+                new_state = toggle_reorder_state(r)  # ← ロジックは cost_logic に任せる
+                up_btn.visible = new_state
+                down_btn.visible = new_state
+                handle_btn.visible = True
                 page.update()
 
             # ▼ ボタン定義（IconButton を使わない）
@@ -195,16 +113,17 @@ def CostTable(
 
             up_btn = make_icon_button(
                 ft.Icons.ARROW_UPWARD,
-                on_click=lambda e, d=date, i=idx: on_reorder(d, i, i-1),
+                on_click=make_up_handler(on_reorder, date, idx),
                 visible=row["reorder_open"],
-                disabled=not can_move_up,
+                disabled=not can_up,
             )
+
 
             down_btn = make_icon_button(
                 ft.Icons.ARROW_DOWNWARD,
-                on_click=lambda e, d=date, i=idx: on_reorder(d, i, i+1),
+                on_click=make_down_handler(on_reorder, date, idx),
                 visible=row["reorder_open"],
-                disabled=not can_move_down,
+                disabled=not can_down,
             )
 
             # ▼ 三本線を押したときの動作
@@ -337,28 +256,7 @@ def CostTable(
         # -------------------------
         # 行追加ボタン（6列）
         # -------------------------
-        table_rows.append(
-            ft.Row(
-                [
-                    ft.Container(width=84),  # 操作列は空
-                    cell(
-                        ft.IconButton(
-                            icon=ft.Icons.ADD,
-                            icon_color=ft.Colors.GREEN,
-                            on_click=lambda e, d=date: on_add(d),
-                        ),
-                        width=COL_WIDTHS[0],
-                        align=ft.alignment.center,
-                    ),
-                    cell(ft.Text(f"{date} の費用を追加", color=ft.Colors.BLACK), width=COL_WIDTHS[1]),
-                    cell(ft.Text(""), width=COL_WIDTHS[2]),
-                    cell(ft.Text(""), width=COL_WIDTHS[3]),
-                    cell(ft.Text(""), width=COL_WIDTHS[4]),
-                    cell(ft.Text(""), width=COL_WIDTHS[5]),
-                ],
-                spacing=0,
-            )
-        )
+        table_rows.append(make_add_row(date, on_add))
 
 
     return ft.Column(
