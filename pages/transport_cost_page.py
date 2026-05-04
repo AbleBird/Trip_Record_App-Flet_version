@@ -1,6 +1,7 @@
 # pages/transport_cost_page.py
 
 import flet as ft
+import sqlite3
 
 from components.cost.transport_cost_table import TransportCostTable
 from db.cost_database import (
@@ -11,6 +12,26 @@ from db.cost_database import (
     update_transport_cost,
 )
 
+TRAVEL_DB_PATH = "travel.db"
+
+
+# ---------------------------------------------------------
+# Trip名取得（CostModePage と同じ思想で travel.db から直接読む）
+# ---------------------------------------------------------
+def get_trip_name(trip_id: int) -> str | None:
+    conn = sqlite3.connect(TRAVEL_DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute("SELECT name FROM trips WHERE id = ?", (trip_id,))
+    row = cur.fetchone()
+
+    conn.close()
+
+    if not row:
+        return None
+
+    return row[0]
+
 
 def TransportCostModePage(page, trip_id, date):
 
@@ -19,6 +40,9 @@ def TransportCostModePage(page, trip_id, date):
     # -------------------------
     rows = get_transport_costs_by_date(trip_id, date)
     trip_total = get_transport_total_for_trip(trip_id)
+
+    # Trip名取得（null対策）
+    trip_name = get_trip_name(trip_id) or "（名称未設定）"
 
     # -------------------------
     # DB 接続済みハンドラ
@@ -47,21 +71,48 @@ def TransportCostModePage(page, trip_id, date):
                 "金額計算モード（メイン）に戻る",
                 bgcolor=ft.Colors.BLUE,
                 color=ft.Colors.WHITE,
-                on_click=lambda e: page.go(f"/trip/{trip_id}/cost")
+                on_click=lambda e: page.go(f"/trip/{trip_id}/cost"),
             ),
         ],
         spacing=20,
     )
 
     # -------------------------
-    # タイトル + Trip全体の交通費総額
+    # タイトル行（1段目：固定タイトル）
     # -------------------------
-    title_row = ft.Row(
+    title_row_1 = ft.Row(
         [
-            ft.Text("交通費専用モード", size=22, weight=ft.FontWeight.BOLD, expand=1, color=ft.Colors.BLACK),
-            
-            ft.Text(f"交通費総額：{trip_total:,} 円", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-        ]
+            ft.Text(
+                "交通費専用モード",
+                size=22,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLACK,
+                expand=1,
+            ),
+        ],
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+    )
+
+    # -------------------------
+    # タイトル行（2段目：Trip名 + 交通費総額）
+    # -------------------------
+    title_row_2 = ft.Row(
+        [
+            ft.Text(
+                trip_name,
+                size=20,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLACK,
+                expand=1,
+            ),
+            ft.Text(
+                f"交通費総額：{trip_total:,} 円",
+                size=20,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLACK,
+            ),
+        ],
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
     )
 
     # -------------------------
@@ -77,11 +128,15 @@ def TransportCostModePage(page, trip_id, date):
         on_edit=handle_edit,
     )
 
+    # -------------------------
+    # View 全体
+    # -------------------------
     return ft.View(
         route=f"/trip/{trip_id}/cost/transport/{date}",
         controls=[
             top_buttons,
-            title_row,
+            title_row_1,
+            title_row_2,
             ft.Divider(height=10),
             table,
         ],

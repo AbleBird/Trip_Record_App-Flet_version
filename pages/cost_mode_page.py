@@ -84,13 +84,14 @@ def build_cross_table(grouped_rows, transport_totals):
 
     for date, items in grouped_rows.items():
 
-        food = sum(r["amount"] for r in items if r["type"] == "食費")
-        hotel = sum(r["amount"] for r in items if r["type"] == "宿泊費")
-        gift = sum(r["amount"] for r in items if r["type"] == "お土産代")
-        other = sum(r["amount"] for r in items if r["type"] == "その他諸費")
+        food = sum(to_int(r["amount"]) for r in items if r["type"] == "食費")
+        hotel = sum(to_int(r["amount"]) for r in items if r["type"] == "宿泊費")
+        gift = sum(to_int(r["amount"]) for r in items if r["type"] == "お土産代")
+        other = sum(to_int(r["amount"]) for r in items if r["type"] == "その他諸費")
 
-        transport = transport_totals.get(date, 0)
+        transport = to_int(transport_totals.get(date, 0))
         total = food + hotel + gift + other + transport
+
 
         rows.append(
             ft.DataRow(
@@ -106,18 +107,31 @@ def build_cross_table(grouped_rows, transport_totals):
             )
         )
 
-    total_transport = sum(transport_totals.values())
+    # ★ ここから下をすべて to_int 経由にする
+    total_transport = sum(to_int(v) for v in transport_totals.values())
     total_food = sum(
-        r["amount"] for rows in grouped_rows.values() for r in rows if r["type"] == "食費"
+        to_int(r["amount"])
+        for rows in grouped_rows.values()
+        for r in rows
+        if r["type"] == "食費"
     )
     total_hotel = sum(
-        r["amount"] for rows in grouped_rows.values() for r in rows if r["type"] == "宿泊費"
+        to_int(r["amount"])
+        for rows in grouped_rows.values()
+        for r in rows
+        if r["type"] == "宿泊費"
     )
     total_gift = sum(
-        r["amount"] for rows in grouped_rows.values() for r in rows if r["type"] == "お土産代"
+        to_int(r["amount"])
+        for rows in grouped_rows.values()
+        for r in rows
+        if r["type"] == "お土産代"
     )
     total_other = sum(
-        r["amount"] for rows in grouped_rows.values() for r in rows if r["type"] == "その他諸費"
+        to_int(r["amount"])
+        for rows in grouped_rows.values()
+        for r in rows
+        if r["type"] == "その他諸費"
     )
 
     total_all = total_transport + total_food + total_hotel + total_gift + total_other
