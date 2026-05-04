@@ -4,7 +4,7 @@ from pages.trip_top_page import TripTopPage
 from db.travel_database import init_travel_db
 from db.cost_database import init_cost_db
 from pages.cost_mode_page import CostModePage
-from pages.transport_cost_page import TransportCostMode
+from pages.transport_cost_page import TransportCostModePage
 
 def main(page: ft.Page):
     print("MAIN STARTED")
@@ -48,13 +48,9 @@ def main(page: ft.Page):
                 trip_id = None
                 date = None
 
+            # TransportCostModePage は View を返すので、そのまま append する
             page.views.append(
-                ft.View(
-                    route=page.route,
-                    controls=[TransportCostMode(page, trip_id, date)],
-                    bgcolor=ft.Colors.WHITE,
-                    scroll=ft.ScrollMode.AUTO,   # ★ 追加
-                )
+                TransportCostModePage(page, trip_id, date)
             )
 
 

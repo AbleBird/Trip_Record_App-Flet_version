@@ -13,4 +13,9 @@ CostModepage: 80% Complete
 Main changes: Refactor
 Sort logic: Bug remained
 
+### May 4, 2026
+TransportCostMode: Routing added
+CostModePage Updated
+Sort logic: Bug remained
+
 ## How to use

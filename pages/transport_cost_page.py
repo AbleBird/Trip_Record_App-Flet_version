@@ -12,7 +12,7 @@ from db.cost_database import (
 )
 
 
-def TransportCostMode(page, trip_id, date):
+def TransportCostModePage(page, trip_id, date):
 
     # -------------------------
     # 最新データ取得
@@ -58,8 +58,9 @@ def TransportCostMode(page, trip_id, date):
     # -------------------------
     title_row = ft.Row(
         [
-            ft.Text("交通費専用モード", size=22, weight=ft.FontWeight.BOLD, expand=1),
-            ft.Text(f"交通費総額：{trip_total:,} 円", size=20, weight=ft.FontWeight.BOLD),
+            ft.Text("交通費専用モード", size=22, weight=ft.FontWeight.BOLD, expand=1, color=ft.Colors.BLACK),
+            
+            ft.Text(f"交通費総額：{trip_total:,} 円", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
         ]
     )
 
@@ -85,4 +86,5 @@ def TransportCostMode(page, trip_id, date):
             table,
         ],
         scroll=ft.ScrollMode.AUTO,
+        bgcolor=ft.Colors.WHITE,
     )
