@@ -172,7 +172,7 @@ def make_other_cost_row(
     )
 
     # -------------------------
-    # ▼ 5列目：累計（未実装）
+    # ▼ 5列目：累計
     # -------------------------
     cumulative_cell = cell(
         ft.Text(f"{cumulative:,} 円", color=ft.Colors.BLACK),

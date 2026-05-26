@@ -1,3 +1,5 @@
+# main.py
+
 import flet as ft
 from pages.home_page import HomePage
 from pages.trip_top_page import TripTopPage
@@ -41,17 +43,25 @@ def main(page: ft.Page):
         # ★ 交通費専用モード
         elif "/cost/transport/" in page.route:
             try:
-                parts = page.route.split("/")
+                # クエリ (?open=...) を切り落とす
+                path, _, query = page.route.partition("?")
+
+                # path = /trip/14/cost/transport/2026/05/06
+                parts = path.split("/")
                 trip_id = int(parts[2])
-                date = parts[5]
-            except:
+
+                # parts[5] = 2026, parts[6] = 05, parts[7] = 06
+                date = f"{parts[5]}/{parts[6]}/{parts[7]}"
+
+            except Exception as e:
+                print("Transport route parse error:", e)
                 trip_id = None
                 date = None
 
-            # TransportCostModePage は View を返すので、そのまま append する
             page.views.append(
                 TransportCostModePage(page, trip_id, date)
             )
+
 
 
         # ★ まず cost モードを先に判定

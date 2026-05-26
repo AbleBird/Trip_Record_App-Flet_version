@@ -18,4 +18,9 @@ TransportCostMode: Routing added
 CostModePage Updated
 Sort logic: Bug remained
 
+### May 27, 2026
+CostModePage & TransportCostPage: 95% completed
+Sort logic: Paused
+Sync logic: in the next update
+
 ## How to use

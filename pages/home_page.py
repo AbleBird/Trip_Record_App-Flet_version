@@ -235,7 +235,7 @@ def HomePage(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
-            ft.Container(content=trip_list, height=400),
+            ft.Container(content=trip_list, height=550),
             add_section,
         ]
     )

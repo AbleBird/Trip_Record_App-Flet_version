@@ -1,6 +1,7 @@
-# components/transport_cost_table.py
+#components/cost/transport_cost_table.py
 
 import flet as ft
+from components.cost.common.cost_elements import cell
 
 MAIN_CATEGORY = ["鉄道", "バス", "タクシー", "船", "その他通行料等"]
 
@@ -8,162 +9,259 @@ RAIL_SUB = [
     "乗車券",
     "座席指定券",
     "自由席特急券",
+    "立席特急券",
     "指定席特急券",
     "グリーン券",
     "その他特別券",
 ]
 
 TICKET_TYPES = [
-    "紙のチケット",
+    "紙チケット",
+    "紙切符",
     "現金",
-    "交通系ICカード",
-    "クレジットカード（タッチ）",
+    "交通系IC",
+    "クレカ（タッチ）",
     "QR決済",
-    "チケットレス",
-    "モバイルチケット",
+    "チケレス",
+    "モバチケ",
     "その他",
 ]
 
+TC_COLS = [
+    40,   # ＋
+    100,  # 大区分
+    160,  # 中区分
+    120,  # 名称
+    100,  # 出発
+    100,  # 到着
+    100,  # 経由
+    160,  # 路線名
+    160,  # チケット種別
+    80,  # 金額
+    80,  # 累計
+    40,   # 削除
+]
+
+
 def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
 
-    table_controls = []
+    table_rows = []
 
     # -------------------------
-    # 日付行（プリセット）
+    # 日付行（CostTable と同じ）
     # -------------------------
-    table_controls.append(
-        ft.Container(
-            content=ft.Text(
-                f"{date} の交通費",
-                size=18,
-                weight=ft.FontWeight.BOLD,
-            ),
-            padding=10,
-            bgcolor=ft.Colors.GREY_300,
-            border=ft.border.all(1, ft.Colors.BLACK),
+    table_rows.append(
+        ft.Row(
+            [
+                ft.Container(width=TC_COLS[0]),
+                cell(
+                    ft.Text(date, size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                    width=sum(TC_COLS[1:9]),
+                    bgcolor=ft.Colors.GREY_200,
+                ),
+                cell(
+                    ft.Text("合計", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                    width=TC_COLS[9],
+                    bgcolor=ft.Colors.GREY_200,
+                    align=ft.alignment.center,
+                ),
+                cell(
+                    ft.Text("0 円", color=ft.Colors.BLACK),
+                    width=TC_COLS[10],
+                    bgcolor=ft.Colors.GREY_200,
+                    align=ft.alignment.center,
+                ),
+                ft.Container(width=TC_COLS[11]),
+            ],
+            spacing=0,
         )
     )
 
     # -------------------------
-    # 各行の描画
+    # rows が空なら初期行を 1 行作る
     # -------------------------
+    if not rows:
+        rows = [{
+            "id": -1,
+            "category": "",
+            "subcategory": "",
+            "name": "",
+            "from_station": "",
+            "to_station": "",
+            "via": "",
+            "line": "",
+            "ticket_type": "",
+            "amount": 0,
+        }]
+
+    # -------------------------
+    # データ行
+    # -------------------------
+    cumulative = 0
+
     for row in rows:
         row_id = row["id"]
+        cumulative += row["amount"]
 
-        # 累計金額（ここでは rows の順番で累計）
-        sorted_rows = sorted(rows, key=lambda r: r["id"])  # or order_index
-        cumulative = 0
-        for r in sorted_rows:
-            cumulative += r["amount"]
-            if r["id"] == row_id:
-                break
-
-
-        table_controls.append(
+        table_rows.append(
             ft.Row(
                 [
-                    # ＋ボタン（行追加）
-                    ft.IconButton(
-                        icon=ft.Icons.ADD,
-                        icon_color=ft.Colors.BLUE,
-                        on_click=lambda e: on_add(),
-                    ),
-
-                    # 1列目：大区分
-                    ft.Dropdown(
-                        value=row["category"],
-                        options=[ft.dropdown.Option(c) for c in MAIN_CATEGORY],
-                        width=120,
-                        on_change=lambda e, rid=row_id: on_edit(rid, "category", e.control.value),
-                    ),
-
-                    # 2列目：中区分（大区分に応じて変化）
-                    ft.Dropdown(
-                        value=row["subcategory"],
-                        options=[
-                            ft.dropdown.Option(s)
-                            for s in (
-                                RAIL_SUB if row["category"] == "鉄道"
-                                else ["運賃"] if row["category"] in ["バス", "タクシー"]
-                                else ["乗船券"] if row["category"] == "船"
-                                else ["通行料"]
-                            )
-                        ],
-                        width=150,
-                        on_change=lambda e, rid=row_id: on_edit(rid, "subcategory", e.control.value),
-                    ),
-
-                    # 3列目：名称（鉄道の特別券など）
-                    ft.TextField(
-                        value=row["name"],
-                        width=150,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "name", e.control.value),
-                        disabled=(
-                            row["category"] != "鉄道" or row["subcategory"] == "乗車券"
-                        ),
-                    ),
-
-                    # 4列目：出発地点
-                    ft.TextField(
-                        value=row["from_station"],
-                        width=150,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "from_station", e.control.value),
-                    ),
-
-                    # 5列目：到着地点
-                    ft.TextField(
-                        value=row["to_station"],
-                        width=150,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "to_station", e.control.value),
-                    ),
-
-                    # 6列目：経由
-                    ft.TextField(
-                        value=row["via"],
-                        width=150,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "via", e.control.value),
-                    ),
-
-                    # 7列目：路線名
-                    ft.TextField(
-                        value=row["line"],
-                        width=150,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "line", e.control.value),
-                    ),
-
-                    # 8列目：チケット種別
-                    ft.Dropdown(
-                        value=row["ticket_type"],
-                        options=[ft.dropdown.Option(t) for t in TICKET_TYPES],
-                        width=150,
-                        on_change=lambda e, rid=row_id: on_edit(rid, "ticket_type", e.control.value),
-                    ),
-
-                    # 9列目：金額
-                    ft.TextField(
-                        value=f"{row['amount']:,}",
-                        width=120,
-                        text_align=ft.TextAlign.RIGHT,
-                        on_blur=lambda e, rid=row_id: on_edit(rid, "amount", e.control.value),
-                    ),
-
-                    # 10列目：累計（読み取り専用）
+                    # 0: ＋ボタン（枠線なし）
                     ft.Container(
-                        content=ft.Text(f"{cumulative:,}"),
-                        width=120,
+                        content=ft.IconButton(
+                            icon=ft.Icons.ADD,
+                            icon_color=ft.Colors.BLUE,
+                            on_click=lambda e: on_add(),
+                        ),
+                        width=TC_COLS[0],
                         alignment=ft.alignment.center,
-                        border=ft.border.all(1, ft.Colors.BLACK),
                     ),
 
-                    # 削除ボタン
-                    ft.IconButton(
-                        icon=ft.Icons.DELETE,
-                        icon_color=ft.Colors.RED,
-                        on_click=lambda e, rid=row_id: on_delete(rid),
+                    # 1: 大区分（Dropdown）
+                    cell(
+                        ft.Dropdown(
+                            value=row["category"],
+                            options=[ft.dropdown.Option(c) for c in MAIN_CATEGORY],
+                            bgcolor=ft.Colors.WHITE,
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_change=lambda e, rid=row_id: on_edit(rid, "category", e.control.value),
+                        ),
+                        width=TC_COLS[1],
+                    ),
+
+                    # 2: 中区分（Dropdown）
+                    cell(
+                        ft.Dropdown(
+                            value=row["subcategory"],
+                            options=[
+                                ft.dropdown.Option(s)
+                                for s in (
+                                    RAIL_SUB if row["category"] in ["", "鉄道"]     # ★ 初期値 "" を鉄道扱いに
+                                    else ["運賃"] if row["category"] in ["バス", "タクシー"]
+                                    else ["乗船券"] if row["category"] == "船"
+                                    else ["通行料"]
+                                )
+                            ],
+                            bgcolor=ft.Colors.WHITE,
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_change=lambda e, rid=row_id: on_edit(rid, "subcategory", e.control.value),
+                        ),
+                        width=TC_COLS[2],
+                    ),
+
+                    # 3: 名称（TextField + label）
+                    cell(
+                        ft.TextField(
+                            label="名称",
+                            value=row["name"],
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            disabled = (
+                                (row["category"] in ["バス", "タクシー"] and row["subcategory"] == "運賃") or
+                                (row["category"] == "船" and row["subcategory"] == "乗船券") or
+                                (row["category"] == "その他通行料等" and row["subcategory"] == "通行料")
+                            ),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "name", e.control.value),
+                        ),
+                        width=TC_COLS[3],
+                    ),
+
+                    # 4: 出発
+                    cell(
+                        ft.TextField(
+                            label="出発駅/地点",
+                            value=row["from_station"],
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "from_station", e.control.value),
+                        ),
+                        width=TC_COLS[4],
+                    ),
+
+                    # 5: 到着
+                    cell(
+                        ft.TextField(
+                            label="到着駅/地点",
+                            value=row["to_station"],
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "to_station", e.control.value),
+                        ),
+                        width=TC_COLS[5],
+                    ),
+
+                    # 6: 経由
+                    cell(
+                        ft.TextField(
+                            label="経由",
+                            value=row["via"],
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "via", e.control.value),
+                        ),
+                        width=TC_COLS[6],
+                    ),
+
+                    # 7: 路線名
+                    cell(
+                        ft.TextField(
+                            label="路線名",
+                            value=row["line"],
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "line", e.control.value),
+                        ),
+                        width=TC_COLS[7],
+                    ),
+
+                    # 8: チケット種別（Dropdown）
+                    cell(
+                        ft.Dropdown(
+                            value=row["ticket_type"],
+                            options=[ft.dropdown.Option(t) for t in TICKET_TYPES],
+                            bgcolor=ft.Colors.WHITE,
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_change=lambda e, rid=row_id: on_edit(rid, "ticket_type", e.control.value),
+                        ),
+                        width=TC_COLS[8],
+                    ),
+
+                    # 9: 金額
+                    cell(
+                        ft.TextField(
+                            label="金額",
+                            value=str(row["amount"]),
+                            text_align=ft.TextAlign.RIGHT,
+                            color=ft.Colors.BLACK,
+                            border=ft.InputBorder.NONE,     # ← 追加
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "amount", e.control.value),
+                        ),
+                        width=TC_COLS[9],
+                    ),
+
+                    # 10: 累計
+                    cell(
+                        ft.Text(f"{cumulative:,}", color=ft.Colors.BLACK),
+                        width=TC_COLS[10],
+                        align=ft.alignment.center,
+                    ),
+
+                    # 11: 削除（枠線なし）
+                    ft.Container(
+                        content=ft.IconButton(
+                            icon=ft.Icons.DELETE,
+                            icon_color=ft.Colors.RED,
+                            on_click=lambda e, rid=row_id: on_delete(rid),
+                        ),
+                        width=TC_COLS[11],
+                        alignment=ft.alignment.center,
                     ),
                 ],
                 spacing=0,
             )
         )
 
-    return ft.Column(table_controls, spacing=10)
+    return ft.Column(table_rows, spacing=0)
