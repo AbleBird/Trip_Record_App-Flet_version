@@ -32,8 +32,11 @@ def show_middle(page, idx):
 def rebuild(page, trip_id, TripTopPage):
     """
     TripTopPage の UI をその場で再構築して即時反映する。
-    page.go() を使わないのがポイント。
+    page.go() や View 差し替えは使わない。
     """
     new_view = TripTopPage(page, trip_id)
+
+    # ★ controls だけ差し替える（bgcolor は page 側で管理）
     page.views[-1].controls = new_view.controls
+
     page.update()

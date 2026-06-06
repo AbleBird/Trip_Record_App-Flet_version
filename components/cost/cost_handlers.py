@@ -6,6 +6,7 @@ from db.cost_database import (
     add_other_cost,
     delete_other_cost,
 )
+from components.others.sync_logic import should_sync
 
 TRAVEL_DB_PATH = "travel.db"
 
@@ -15,7 +16,7 @@ TRAVEL_DB_PATH = "travel.db"
 # ---------------------------------------------------------
 def handle_edit(page, grouped_rows, transport_totals, date_list, trip_id):
 
-    def _edit(row_id, col, val):
+    def _edit(row_id, col, val, sync_flag):
         # DB 更新
         update_other_cost(row_id, col, val)
 
@@ -31,19 +32,24 @@ def handle_edit(page, grouped_rows, transport_totals, date_list, trip_id):
                     else:
                         r[col] = val
 
-        # CostModePage を再構築
-        page.go(f"/trip/{trip_id}/cost")
+        # 同期ONのときだけページ再構築
+        if sync_flag:
+            page.go(f"/trip/{trip_id}/cost")
 
     return _edit
+
 
 # ---------------------------------------------------------
 # 行追加（on_add）
 # ---------------------------------------------------------
 def handle_add(page, trip_id):
 
-    def _add(date):
+    def _add(date, sync_flag):
         add_other_cost(trip_id, date)
-        page.go(f"/trip/{trip_id}/cost")
+
+        # 同期ONのときだけページ再構築
+        if sync_flag:
+            page.go(f"/trip/{trip_id}/cost")
 
     return _add
 
@@ -53,33 +59,11 @@ def handle_add(page, trip_id):
 # ---------------------------------------------------------
 def handle_delete(page, trip_id):
 
-    def _delete(row_id):
+    def _delete(row_id, sync_flag):
         delete_other_cost(row_id)
-        page.go(f"/trip/{trip_id}/cost")
+
+        # 同期ONのときだけページ再構築
+        if sync_flag:
+            page.go(f"/trip/{trip_id}/cost")
 
     return _delete
-
-
-# ---------------------------------------------------------
-# 並べ替え（on_reorder）
-# ---------------------------------------------------------
-def handle_reorder(page, grouped_rows, trip_id):
-
-    def _reorder(date, old_index, new_index):
-        rows = grouped_rows.get(date, [])
-        if not rows:
-            return
-        if old_index < 0 or old_index >= len(rows):
-            return
-        if new_index < 0 or new_index >= len(rows):
-            return
-
-        item = rows.pop(old_index)
-        rows.insert(new_index, item)
-        grouped_rows[date] = rows
-
-        # 並べ替え後もページ再構築（他と同じ）
-        page.go(f"/trip/{trip_id}/cost")
-
-    return _reorder
-

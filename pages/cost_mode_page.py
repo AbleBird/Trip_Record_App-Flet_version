@@ -2,200 +2,109 @@
 
 import flet as ft
 import sqlite3
-from datetime import datetime, timedelta
-
 from components.cost.cost_table import CostTable
 from db.cost_database import get_other_costs, get_transport_totals
 from components.cost.cost_handlers import (
     handle_edit,
     handle_add,
     handle_delete,
-    handle_reorder,
 )
+from components.others.date_manager import get_date_list_from_rows   # ★ 追加
+from components.cost.common.cost_cross_table import build_cross_table
+from components.others.counter import build_counter
+from utils.number import to_int
+from components.others.sync_logic import is_sync, toggle_sync
 
 TRAVEL_DB_PATH = "travel.db"
 
 
-def get_trip_dates(trip_id: int):
-    conn = sqlite3.connect(TRAVEL_DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute("SELECT date_start, date_end FROM trips WHERE id = ?", (trip_id,))
-    row = cur.fetchone()
-    conn.close()
-
-    if not row:
-        return []
-
-    ds, de = row
-    ds_date = datetime.strptime(ds, "%Y/%m/%d")
-    de_date = datetime.strptime(de, "%Y/%m/%d")
-
-    delta = (de_date - ds_date).days + 1
-    return [
-        (ds_date + timedelta(days=i)).strftime("%Y/%m/%d")
-        for i in range(delta)
-    ]
-
-
-# ---------------------------------------------------------
-# 日付ごとに other_costs をグループ化
-# ---------------------------------------------------------
-def group_by_date(other_costs):
-    grouped = {}
-    for row in other_costs:
-        date = row["date"]
-        if date not in grouped:
-            grouped[date] = []
-        grouped[date].append(row)
-    return grouped
-
-
-# ---------------------------------------------------------
-# クロス表の構築
-# ---------------------------------------------------------
-def build_cross_table(grouped_rows, transport_totals):
-
-    if not grouped_rows:
-        return ft.Container(
-            content=ft.Text(
-                "まだ費用が入力されていません",
-                size=16,
-                weight=ft.FontWeight.BOLD,
-                color=ft.Colors.BLACK,
-            ),
-            padding=10,
-            bgcolor=ft.Colors.GREY_200,
-            border=ft.border.all(1, ft.Colors.GREY_400),
-            border_radius=5,
-        )
-
-    columns = [
-        ft.DataColumn(ft.Text("日付", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("交通費", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("食費", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("宿泊費", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("お土産", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("その他", color=ft.Colors.BLACK)),
-        ft.DataColumn(ft.Text("合計", color=ft.Colors.BLACK)),
-    ]
-
-    rows = []
-
-    for date, items in grouped_rows.items():
-
-        food = sum(to_int(r["amount"]) for r in items if r["type"] == "食費")
-        hotel = sum(to_int(r["amount"]) for r in items if r["type"] == "宿泊費")
-        gift = sum(to_int(r["amount"]) for r in items if r["type"] == "お土産代")
-        other = sum(to_int(r["amount"]) for r in items if r["type"] == "その他諸費")
-
-        transport = to_int(transport_totals.get(date, 0))
-        total = food + hotel + gift + other + transport
-
-
-        rows.append(
-            ft.DataRow(
-                cells=[
-                    ft.DataCell(ft.Text(date, color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{transport:,}", color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{food:,}", color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{hotel:,}", color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{gift:,}", color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{other:,}", color=ft.Colors.BLACK)),
-                    ft.DataCell(ft.Text(f"{total:,}", color=ft.Colors.BLACK)),
-                ]
-            )
-        )
-
-    # ★ ここから下をすべて to_int 経由にする
-    total_transport = sum(to_int(v) for v in transport_totals.values())
-    total_food = sum(
-        to_int(r["amount"])
-        for rows in grouped_rows.values()
-        for r in rows
-        if r["type"] == "食費"
-    )
-    total_hotel = sum(
-        to_int(r["amount"])
-        for rows in grouped_rows.values()
-        for r in rows
-        if r["type"] == "宿泊費"
-    )
-    total_gift = sum(
-        to_int(r["amount"])
-        for rows in grouped_rows.values()
-        for r in rows
-        if r["type"] == "お土産代"
-    )
-    total_other = sum(
-        to_int(r["amount"])
-        for rows in grouped_rows.values()
-        for r in rows
-        if r["type"] == "その他諸費"
-    )
-
-    total_all = total_transport + total_food + total_hotel + total_gift + total_other
-
-    rows.append(
-        ft.DataRow(
-            cells=[
-                ft.DataCell(ft.Text("合計", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_transport:,}", color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_food:,}", color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_hotel:,}", color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_gift:,}", color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_other:,}", color=ft.Colors.BLACK)),
-                ft.DataCell(ft.Text(f"{total_all:,}", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK)),
-            ]
-        )
-    )
-
-    return ft.DataTable(columns=columns, rows=rows)
+def sanitize_cost_rows(rows):
+    sanitized = []
+    for r in rows:
+        sanitized.append({
+            "id": r["id"],
+            "date": r["date"],
+            "type": r.get("type", ""),       # ← そのまま使う
+            "title": r.get("title", ""),     # ← そのまま使う
+            "item": r.get("item", ""),       # ← そのまま使う
+            "amount": to_int(r.get("amount", 0)),
+            "note": r.get("note", ""),
+        })
+    return sanitized
 
 def to_int(v):
     try:
         return int(v)
-    except Exception:
+    except:
         return 0
+
 
 # ---------------------------------------------------------
 # 金額計算モード（メインページ）
 # ---------------------------------------------------------
 def CostModePage(page, trip_id):
 
-    # Trip の日付リスト
-    date_list = get_trip_dates(trip_id)
+    # -----------------------------------------------------
+    # ★ 追加行数カウンター（必ず最初に置く）
+    # -----------------------------------------------------
+    add_count = 1
 
+    def get_add_count():
+        return add_count
+
+    def set_add_count(v):
+        nonlocal add_count
+        add_count = v
+        page.update()
+
+    counter = build_counter(get_add_count, set_add_count)
+
+    # Trip名取得
+    def get_trip_name(trip_id):
+        conn = sqlite3.connect(TRAVEL_DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM trips WHERE id = ?", (trip_id,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else "Trip"
+
+    # -----------------------------------------------------
+    # ★ TripTopPage と同じ日付行を取得（trip_rows）
+    # -----------------------------------------------------
+    date_list = get_date_list_from_rows(trip_id)
+
+    # -----------------------------------------------------
     # DB からデータ取得
-    other_costs = get_other_costs(trip_id)
+    # -----------------------------------------------------
+    other_costs = sanitize_cost_rows(get_other_costs(trip_id))
     transport_totals = get_transport_totals(trip_id)
 
-    # transport_totals の値を int に統一
     for d in list(transport_totals.keys()):
         try:
             transport_totals[d] = int(transport_totals[d])
         except:
             transport_totals[d] = 0
 
-    # other_costs を日付ごとにグループ化
-    grouped_rows = group_by_date(other_costs)
+    # -----------------------------------------------------
+    # 日付ごとに other_costs をグループ化
+    # -----------------------------------------------------
+    grouped_rows = {d: [] for d in date_list}
+    for r in other_costs:
+        if r["date"] in grouped_rows:
+            grouped_rows[r["date"]].append(r)
 
-    # Trip の全日付をプリセット
-    if date_list:
-        for d in date_list:
-            if d not in grouped_rows:
-                grouped_rows[d] = []
-        grouped_rows = dict(sorted(grouped_rows.items(), key=lambda x: x[0]))
-
-    # 総額計算（文字列混入対策で必ず int に変換してから足す）
+    # -----------------------------------------------------
+    # 総額計算
+    # -----------------------------------------------------
     total_amount = sum(
         sum(to_int(r["amount"]) for r in grouped_rows.get(d, []))
         + to_int(transport_totals.get(d, 0))
         for d in date_list
     )
 
-
+    # -----------------------------------------------------
     # 上部ボタン
+    # -----------------------------------------------------
     top_buttons = ft.Row(
         [
             ft.ElevatedButton(
@@ -214,57 +123,132 @@ def CostModePage(page, trip_id):
         spacing=20,
     )
 
-    # タイトル + 総額
+    def build_sync_button():
+        mode = is_sync()
+        bg = ft.Colors.LIGHT_GREEN_200 if mode else ft.Colors.PINK_200
+        label = "同期 ON" if mode else "同期 OFF"
+
+        def on_toggle_sync(e):
+            toggle_sync()
+            page.go("/_refresh")   # ★ 追加
+            # ★ ページを再構築して、is_sync() の新しい値で CostModePage 全体を描き直す
+            page.go(f"/trip/{trip_id}/cost")
+
+        return ft.ElevatedButton(
+            label,
+            bgcolor=bg,
+            color=ft.Colors.BLACK,
+            on_click=on_toggle_sync,
+            height=40,
+        )
+
+    sync_button = build_sync_button()
+
+    trip_name = get_trip_name(trip_id)
+
+    # -----------------------------------------------------
+    # ページタイトル行
+    # -----------------------------------------------------
     title_row = ft.Row(
         [
             ft.Text(
                 "金額計算モード（メイン）",
                 size=22,
                 weight=ft.FontWeight.BOLD,
-                expand=1,
                 color=ft.Colors.BLACK,
             ),
+        ],
+        spacing=20,
+    )
+
+    # Trip 名＋総額行（2 行目）
+    trip_info_row = ft.Row(
+        [
+            # 左：Trip 名
             ft.Text(
-                f"総額：{total_amount:,} 円",
+                trip_name,
                 size=20,
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.BLACK,
             ),
-        ]
+
+            # 右：Trip 内総額（右揃え）
+            ft.Container(
+                content=ft.Text(
+                    f"Trip内総額：{total_amount:,} 円",
+                    size=20,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLACK,
+                ),
+                expand=True,
+                alignment=ft.alignment.center_right,
+            ),
+        ],
+        spacing=20,
     )
 
-    # クロス表
-    cross_table = build_cross_table(grouped_rows, transport_totals)
 
-    # handlers 生成
+    # -----------------------------------------------------
+    # handlers 生成（★ on_add を count 対応に修正）
+    # -----------------------------------------------------
     on_edit = handle_edit(page, grouped_rows, transport_totals, date_list, trip_id)
-    on_add = handle_add(page, trip_id)
-    on_delete = handle_delete(page, trip_id)
-    on_reorder = handle_reorder(page, grouped_rows, trip_id)
 
+    def on_edit_wrapper(row_id, col, val, sync_flag):
+        handle_edit(page, grouped_rows, transport_totals, date_list, trip_id)(
+            row_id, col, val, sync_flag
+        )
+
+    def on_delete_wrapper(row_id, sync_flag):
+        handle_delete(page, trip_id)(row_id, sync_flag)
+
+    def on_add_wrapper(date, count, sync_flag):
+        for _ in range(count):
+            handle_add(page, trip_id)(date, sync_flag)
+
+
+    on_delete = handle_delete(page, trip_id)
+
+    # -----------------------------------------------------
     # 詳細入力テーブル
+    # -----------------------------------------------------
     detail_table = CostTable(
         page=page,
         trip_id=trip_id,
         grouped_rows=grouped_rows,
         transport_totals=transport_totals,
         date_list=date_list,
-        on_add=on_add,
-        on_delete=on_delete,
-        on_edit=on_edit,
+        on_add=on_add_wrapper,
+        on_delete=on_delete_wrapper,
+        on_edit=on_edit_wrapper,
         on_open_transport=lambda d: page.go(f"/trip/{trip_id}/cost/transport/{d}"),
-        on_reorder=on_reorder,
+        get_add_count=get_add_count,
+        counter_control=counter,   # ★ ここで渡す
+        sync_control=sync_button,      # ← 追加
     )
 
-    return ft.ListView(
+    # CostTable 部分だけをスクロールさせる Column にする
+    detail_scroll = ft.Column(
+        controls=[detail_table],
+        expand=True,
+        scroll=ft.ScrollMode.AUTO,
+    )
+
+    return ft.Column(
         expand=True,
         spacing=10,
         controls=[
             top_buttons,
             title_row,
+            trip_info_row,
             ft.Divider(height=10),
-            cross_table,
-            ft.Divider(height=20),
-            detail_table,
-        ]
+
+            # クロス表は固定
+            build_cross_table(grouped_rows, transport_totals),
+
+            # TripTopPage と同じ構造でスクロール領域を作る
+            ft.Container(
+                content=detail_scroll,
+                expand=True,
+            ),
+        ],
     )

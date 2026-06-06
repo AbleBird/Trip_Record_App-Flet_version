@@ -1,3 +1,5 @@
+# delete_broken_dates.py
+
 import sqlite3
 
 conn = sqlite3.connect("cost.db")

@@ -22,40 +22,60 @@ def make_date_row(date):
 # 交通費行（6列）
 def make_transport_row(date, transport_amount, on_open_transport):
     return ft.Row(
-                [
-                    ft.Container(width=84),  # 操作列は空
-                    cell(
-                        ft.Text("交通費", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[0],
-                        bgcolor=ft.Colors.ORANGE_100,
-                        align=ft.alignment.center,
-                    ),
-                    cell(
-                        ft.ElevatedButton(
-                            "交通費専用モードへ",
-                            bgcolor=ft.Colors.BLUE,
-                            color=ft.Colors.WHITE,
-                            on_click=lambda e, d=date: on_open_transport(d),
-                        ),
-                        width=COL_WIDTHS[1],
-                        bgcolor=ft.Colors.ORANGE_100,
-                    ),
-                    cell(
-                        ft.Text("総額", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[2],
-                        bgcolor=ft.Colors.ORANGE_100,
-                    ),
-                    cell(
-                        ft.Text(f"{transport_amount:,} 円", color=ft.Colors.BLACK),
-                        width=COL_WIDTHS[3],
-                        bgcolor=ft.Colors.ORANGE_100,
-                        align=ft.alignment.center_right,
-                    ),
-                    cell(ft.Text(""), width=COL_WIDTHS[4], bgcolor=ft.Colors.ORANGE_100),
-                    cell(ft.Text(""), width=COL_WIDTHS[5], bgcolor=ft.Colors.ORANGE_100),
-                ],
-                spacing=0,
-            )
+        [
+            # 1列目：固定ラベル「交通費」
+            cell(
+                ft.Text("交通費", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                width=COL_WIDTHS[0],
+                bgcolor=ft.Colors.ORANGE_100,
+                align=ft.alignment.center,
+            ),
+
+            # 2列目：交通費専用モードへ
+            cell(
+                ft.ElevatedButton(
+                    "交通費専用モードへ",
+                    bgcolor=ft.Colors.BLUE,
+                    color=ft.Colors.WHITE,
+                    on_click=lambda e, d=date: on_open_transport(d),
+                ),
+                width=COL_WIDTHS[1],
+                bgcolor=ft.Colors.ORANGE_100,
+            ),
+
+            # 3列目：固定ラベル「総額」
+            cell(
+                ft.Text("総額", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                width=COL_WIDTHS[2],
+                bgcolor=ft.Colors.ORANGE_100,
+            ),
+
+            # 4列目：金額
+            cell(
+                ft.Text(f"{transport_amount:,} 円", color=ft.Colors.BLACK),
+                width=COL_WIDTHS[3],
+                bgcolor=ft.Colors.ORANGE_100,
+                align=ft.alignment.center_right,
+            ),
+
+            # 5列目：空欄
+            cell(
+                ft.Text(""),
+                width=COL_WIDTHS[4],
+                bgcolor=ft.Colors.ORANGE_100,
+            ),
+
+            # 6列目：空欄
+            cell(
+                ft.Text(""),
+                width=COL_WIDTHS[5],
+                bgcolor=ft.Colors.ORANGE_100,
+            ),
+        ],
+        spacing=0,
+    )
+
+from components.others.sync_logic import should_sync
 
 def make_other_cost_row(
     page,
@@ -65,16 +85,13 @@ def make_other_cost_row(
     trip_id,
     on_edit,
     on_delete,
-    on_reorder,
-    make_icon_button,
-    operation_column,
     TYPE_OPTIONS,
-    cumulative,   # ← ★追加
+    cumulative,
 ):
     row_id = row["id"]
 
     # -------------------------
-    # ▼ Type プルダウン
+    # ▼ Type プルダウン（1列目）
     # -------------------------
     type_dropdown = ft.Dropdown(
         value=row["type"],
@@ -87,18 +104,15 @@ def make_other_cost_row(
         bgcolor=ft.Colors.WHITE,
         color=ft.Colors.BLACK,
     )
-    
 
     def handle_type_change(e, r=row):
         new_type = e.control.value
-
-        # メモリ更新
         r["type"] = new_type
 
-        # DB 更新
-        on_edit(r["id"], "type", new_type)
+        # ★ 同期判定を追加
+        sync = should_sync("cost_mode", "edit", "type")
 
-        # ページ再描画（UI を最新状態に）
+        on_edit(r["id"], "type", new_type, sync)
         page.go(f"/trip/{trip_id}/cost")
 
     type_dropdown.on_change = handle_type_change
@@ -122,38 +136,35 @@ def make_other_cost_row(
             width=COL_WIDTHS[1] - 10,
             border=ft.InputBorder.NONE,
             color=ft.Colors.BLACK,
-            on_blur=lambda e, rid=row_id: on_edit(rid, "title", e.control.value),
+            on_blur=lambda e, rid=row_id: on_edit(
+                rid,
+                "title",
+                e.control.value,
+                should_sync("cost_mode", "edit", "title"),   # ★追加
+            ),
         ),
         width=COL_WIDTHS[1],
     )
 
     # -------------------------
-    # ▼ 3列目：商品名 or 無効
+    # ▼ 3列目：商品名
     # -------------------------
-    if row["type"] == "宿泊費":
-        item_cell = cell(
-            ft.TextField(
-                value="",
-                disabled=True,
-                border=ft.InputBorder.NONE,
-                width=COL_WIDTHS[2] - 10,
-                color=ft.Colors.GREY_600,
+    item_cell = cell(
+        ft.TextField(
+            label="商品名",
+            value=row["item"],
+            width=COL_WIDTHS[2] - 10,
+            border=ft.InputBorder.NONE,
+            color=ft.Colors.BLACK,
+            on_blur=lambda e, rid=row_id: on_edit(
+                rid,
+                "item",
+                e.control.value,
+                should_sync("cost_mode", "edit", "item"),   # ★追加
             ),
-            width=COL_WIDTHS[2],
-            bgcolor=ft.Colors.BROWN_100,
-        )
-    else:
-        item_cell = cell(
-            ft.TextField(
-                label="商品名",
-                value=row["item"],
-                width=COL_WIDTHS[2] - 10,
-                border=ft.InputBorder.NONE,
-                color=ft.Colors.BLACK,
-                on_blur=lambda e, rid=row_id: on_edit(rid, "item", e.control.value),
-            ),
-            width=COL_WIDTHS[2],
-        )
+        ),
+        width=COL_WIDTHS[2],
+    )
 
     # -------------------------
     # ▼ 4列目：金額
@@ -165,7 +176,12 @@ def make_other_cost_row(
             text_align=ft.TextAlign.RIGHT,
             border=ft.InputBorder.NONE,
             color=ft.Colors.BLACK,
-            on_blur=lambda e, rid=row_id: on_edit(rid, "amount", e.control.value),
+            on_blur=lambda e, rid=row_id: on_edit(
+                rid,
+                "amount",
+                e.control.value,
+                should_sync("cost_mode", "edit", "amount"),   # ★追加（必須）
+            ),
         ),
         width=COL_WIDTHS[3],
         align=ft.alignment.center_right,
@@ -190,7 +206,12 @@ def make_other_cost_row(
             width=COL_WIDTHS[5] - 10,
             border=ft.InputBorder.NONE,
             color=ft.Colors.BLACK,
-            on_blur=lambda e, rid=row_id: on_edit(rid, "note", e.control.value),
+            on_blur=lambda e, rid=row_id: on_edit(
+                rid,
+                "note",
+                e.control.value,
+                should_sync("cost_mode", "edit", "note"),   # ★追加
+            ),
         ),
         width=COL_WIDTHS[5],
     )
@@ -202,7 +223,10 @@ def make_other_cost_row(
         content=ft.IconButton(
             icon=ft.Icons.DELETE,
             icon_color=ft.Colors.RED,
-            on_click=lambda e, rid=row_id: on_delete(rid),
+            on_click=lambda e, rid=row_id: on_delete(
+                rid,
+                should_sync("cost_mode", "delete_row"),   # ★追加
+            ),
         ),
         width=50,
         alignment=ft.alignment.center,
@@ -210,11 +234,10 @@ def make_other_cost_row(
     )
 
     # -------------------------
-    # ▼ Row 全体
+    # ▼ Row 全体（左端の＋は CostTable 側で付ける）
     # -------------------------
     return ft.Row(
         [
-            operation_column,
             type_cell,
             title_cell,
             item_cell,

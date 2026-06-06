@@ -1,3 +1,5 @@
+# components/toppage/basic_table.py
+
 import flet as ft
 from components.toppage.table_logic import should_collapse, should_show_collapsed_row, build_collapsed_row
 
@@ -6,11 +8,14 @@ print("BasicTable loaded from:", __file__)
 def BasicTable(
     rows_data,
     on_add_row,
+    on_add_rows,
     on_edit,
     on_delete,
     hide_middle=False,
     expand_target=None,
     on_show_middle=None,
+    add_count_getter=None,   # ★ 追加
+    set_add_count=None,   # ★ setter
 ):
 
     def safe(v):
@@ -117,11 +122,12 @@ def BasicTable(
 
         row_type = row.get("type")
 
+        # 行追加
         plus_cell = ft.Container(
             content=ft.IconButton(
                 icon=ft.Icons.ADD,
                 icon_color=ft.Colors.BLUE,
-                on_click=lambda e, idx=i: on_add_row(idx),
+                on_click=lambda e, idx=i: on_add_rows(idx, add_count_getter()),
             ),
             width=col_widths[0],
             height=48,
@@ -276,6 +282,7 @@ def BasicTable(
         alignment=ft.alignment.center,
     )
 
-    table_rows.append(ft.Row([last_plus], spacing=0))
+    # 最下行に 2 つ並べる
+    table_rows.append(ft.Row([last_plus], spacing=10))
 
     return ft.ListView(controls=table_rows, spacing=0, expand=True)

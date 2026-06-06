@@ -43,15 +43,9 @@ def main(page: ft.Page):
         # ★ 交通費専用モード
         elif "/cost/transport/" in page.route:
             try:
-                # クエリ (?open=...) を切り落とす
-                path, _, query = page.route.partition("?")
-
-                # path = /trip/14/cost/transport/2026/05/06
-                parts = path.split("/")
+                parts = page.route.split("/")
                 trip_id = int(parts[2])
-
-                # parts[5] = 2026, parts[6] = 05, parts[7] = 06
-                date = f"{parts[5]}/{parts[6]}/{parts[7]}"
+                date = "/".join(parts[5:8])
 
             except Exception as e:
                 print("Transport route parse error:", e)
@@ -59,10 +53,12 @@ def main(page: ft.Page):
                 date = None
 
             page.views.append(
-                TransportCostModePage(page, trip_id, date)
+                ft.View(
+                    route=page.route,
+                    controls=[TransportCostModePage(page, trip_id, date)],
+                    bgcolor=ft.Colors.WHITE,
+                )
             )
-
-
 
         # ★ まず cost モードを先に判定
         elif page.route.startswith("/trip/") and page.route.endswith("/cost"):

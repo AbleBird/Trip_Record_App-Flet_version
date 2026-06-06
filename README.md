@@ -23,4 +23,10 @@ CostModePage & TransportCostPage: 95% completed
 Sort logic: Paused
 Sync logic: in the next update
 
+### June 6, 2026
+TripTopPage: Sync Logic added
+CostTable + TransportCostTable: Standardization of Specifications with TripTopPage
+CostModePage & TransportCostPage: Sync Logic add**ing**
+Sort logic: Discontinued
+
 ## How to use

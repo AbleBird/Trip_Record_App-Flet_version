@@ -12,6 +12,7 @@ from components.home.home_logic import (
     delete_trip,
     toggle_all_trips,
 )
+from components.others.date_manager import update_date_rows
 
 
 def HomePage(page: ft.Page):
@@ -50,6 +51,9 @@ def HomePage(page: ft.Page):
         new_name = state.rename_fields[trip_id].value.strip()
         if new_name != "":
             rename_trip(trip_id, new_name)
+
+            # ★ Trip名（日付）変更に伴い、日付行を更新
+            update_date_rows(trip_id)
 
         state.editing_trip_id = None
         if trip_id in state.rename_fields:

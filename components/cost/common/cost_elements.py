@@ -7,7 +7,7 @@ TYPE_OPTIONS = ["食費", "宿泊費", "お土産代", "その他諸費"]
 # 6列構造
 COL_WIDTHS = [140, 200, 200, 150, 150, 200]   # Type, Title, Item, Amount, Cumulative, Note
 DELETE_WIDTH = 50
-HANDLE_WIDTH = 80
+# HANDLE_WIDTH = 80
 
 # ▼ ボタンサイズ（完全固定）
 BTN_SIZE = 28
