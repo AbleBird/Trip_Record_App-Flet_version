@@ -13,7 +13,8 @@ from components.others.date_manager import get_date_list_from_rows   # ★ 追�
 from components.cost.common.cost_cross_table import build_cross_table
 from components.others.counter import build_counter
 from utils.number import to_int
-from components.others.sync_logic import is_sync, toggle_sync
+from components.others.sync_logic import is_sync, toggle_sync, should_sync
+from components.cost.common.rebuild_cost import rebuild_cost
 
 TRAVEL_DB_PATH = "travel.db"
 
@@ -130,17 +131,18 @@ def CostModePage(page, trip_id):
 
         def on_toggle_sync(e):
             toggle_sync()
-            page.go("/_refresh")   # ★ 追加
-            # ★ ページを再構築して、is_sync() の新しい値で CostModePage 全体を描き直す
-            page.go(f"/trip/{trip_id}/cost")
+            rebuild_cost(page, trip_id, CostModePage)
 
-        return ft.ElevatedButton(
-            label,
+        sync_button = ft.ElevatedButton(
+            f"同期モード：{'ON' if is_sync() else 'OFF'}",
             bgcolor=bg,
-            color=ft.Colors.BLACK,
+            color=ft.Colors.WHITE,
             on_click=on_toggle_sync,
             height=40,
         )
+
+        return sync_button
+
 
     sync_button = build_sync_button()
 
@@ -191,22 +193,25 @@ def CostModePage(page, trip_id):
     # -----------------------------------------------------
     # handlers 生成（★ on_add を count 対応に修正）
     # -----------------------------------------------------
-    on_edit = handle_edit(page, grouped_rows, transport_totals, date_list, trip_id)
+    edit_handler = handle_edit(page, grouped_rows, transport_totals, date_list, trip_id, CostModePage)
+    delete_handler = handle_delete(page, trip_id, CostModePage)
+    add_handler = handle_add(page, trip_id, CostModePage)
 
-    def on_edit_wrapper(row_id, col, val, sync_flag):
-        handle_edit(page, grouped_rows, transport_totals, date_list, trip_id)(
-            row_id, col, val, sync_flag
-        )
+    # 編集
+    def on_edit_wrapper(row_id, col, val, _sync_flag_from_table):
+        sync_flag = should_sync("cost_mode", "edit", col)
+        edit_handler(row_id, col, val, sync_flag)
 
-    def on_delete_wrapper(row_id, sync_flag):
-        handle_delete(page, trip_id)(row_id, sync_flag)
+    # 削除
+    def on_delete_wrapper(row_id, _sync_flag_from_table):
+        sync_flag = should_sync("cost_mode", "delete_row")
+        delete_handler(row_id, sync_flag)
 
-    def on_add_wrapper(date, count, sync_flag):
+    # 追加（複数行対応）
+    def on_add_wrapper(date, count, _sync_flag_from_table):
+        sync_flag = should_sync("cost_mode", "add_row")
         for _ in range(count):
-            handle_add(page, trip_id)(date, sync_flag)
-
-
-    on_delete = handle_delete(page, trip_id)
+            add_handler(date, sync_flag)
 
     # -----------------------------------------------------
     # 詳細入力テーブル
@@ -217,7 +222,7 @@ def CostModePage(page, trip_id):
         grouped_rows=grouped_rows,
         transport_totals=transport_totals,
         date_list=date_list,
-        on_add=on_add_wrapper,
+        on_add=on_add_wrapper,      # sync_flag は CostModePage 側で決める
         on_delete=on_delete_wrapper,
         on_edit=on_edit_wrapper,
         on_open_transport=lambda d: page.go(f"/trip/{trip_id}/cost/transport/{d}"),

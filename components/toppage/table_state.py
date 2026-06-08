@@ -1,4 +1,4 @@
-# components/table_state.py
+# components/toppage/table_state.py
 
 def init_state(page):
     """
