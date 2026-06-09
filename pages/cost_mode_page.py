@@ -127,7 +127,6 @@ def CostModePage(page, trip_id):
     def build_sync_button():
         mode = is_sync()
         bg = ft.Colors.LIGHT_GREEN_200 if mode else ft.Colors.PINK_200
-        label = "同期 ON" if mode else "同期 OFF"
 
         def on_toggle_sync(e):
             toggle_sync()
@@ -136,7 +135,7 @@ def CostModePage(page, trip_id):
         sync_button = ft.ElevatedButton(
             f"同期モード：{'ON' if is_sync() else 'OFF'}",
             bgcolor=bg,
-            color=ft.Colors.WHITE,
+            color=ft.Colors.BLACK,
             on_click=on_toggle_sync,
             height=40,
         )

@@ -29,4 +29,7 @@ CostTable + TransportCostTable: Standardization of Specifications with TripTopPa
 CostModePage & TransportCostPage: Sync Logic add**ing**
 Sort logic: Discontinued
 
+### June 9, 2026
+All Pages: Made some adjustment to the colors
+
 ## How to use

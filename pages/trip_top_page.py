@@ -108,16 +108,23 @@ def TripTopPage(page: ft.Page, trip_id: int):
     )
 
     # ★ 同期/非同期切り替え
-    def on_toggle_sync(e):
-        toggle_sync()
-        rebuild(page, trip_id, TripTopPage)
+    def build_sync_button():
+        mode = is_sync()
+        bg = ft.Colors.LIGHT_GREEN_200 if mode else ft.Colors.PINK_200
 
-    sync_button = ft.ElevatedButton(
-        f"同期モード：{'ON' if is_sync() else 'OFF'}",
-        bgcolor=ft.Colors.BROWN,
-        color=ft.Colors.WHITE,
-        on_click=on_toggle_sync,
-    )
+        def on_toggle_sync(e):
+            toggle_sync()
+            rebuild(page, trip_id, TripTopPage)
+
+        return ft.ElevatedButton(
+            f"同期モード：{'ON' if mode else 'OFF'}",
+            bgcolor=bg,
+            color=ft.Colors.BLACK,
+            on_click=on_toggle_sync,
+            height=40,
+        )
+    
+    sync_button = build_sync_button()
 
     #追加行数カウンター
     add_count = 1
@@ -142,7 +149,7 @@ def TripTopPage(page: ft.Page, trip_id: int):
 
     calc_mode_button = ft.ElevatedButton(
         "金額計算モード",
-        bgcolor=ft.Colors.GREEN,
+        bgcolor=ft.Colors.ORANGE,
         color=ft.Colors.WHITE,
         on_click=lambda e: page.go(f"/trip/{trip_id}/cost"),
     )

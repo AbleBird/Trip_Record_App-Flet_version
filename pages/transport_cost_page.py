@@ -54,7 +54,7 @@ def TransportCostModePage(page, trip_id, clicked_date):
         [
             ft.ElevatedButton(
                 "金額計算モード（メイン）に戻る",
-                bgcolor=ft.Colors.BLUE,
+                bgcolor=ft.Colors.ORANGE,
                 color=ft.Colors.WHITE,
                 on_click=lambda e: page.go(f"/trip/{trip_id}/cost"),
             ),

@@ -27,7 +27,7 @@ def make_transport_row(date, transport_amount, on_open_transport):
             cell(
                 ft.Text("交通費", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
                 width=COL_WIDTHS[0],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
                 align=ft.alignment.center,
             ),
 
@@ -35,26 +35,26 @@ def make_transport_row(date, transport_amount, on_open_transport):
             cell(
                 ft.ElevatedButton(
                     "交通費専用モードへ",
-                    bgcolor=ft.Colors.BLUE,
+                    bgcolor=ft.Colors.BROWN,
                     color=ft.Colors.WHITE,
                     on_click=lambda e, d=date: on_open_transport(d),
                 ),
                 width=COL_WIDTHS[1],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
             ),
 
             # 3列目：固定ラベル「総額」
             cell(
                 ft.Text("総額", weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
                 width=COL_WIDTHS[2],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
             ),
 
             # 4列目：金額
             cell(
                 ft.Text(f"{transport_amount:,} 円", color=ft.Colors.BLACK),
                 width=COL_WIDTHS[3],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
                 align=ft.alignment.center_right,
             ),
 
@@ -62,14 +62,14 @@ def make_transport_row(date, transport_amount, on_open_transport):
             cell(
                 ft.Text(""),
                 width=COL_WIDTHS[4],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
             ),
 
             # 6列目：空欄
             cell(
                 ft.Text(""),
                 width=COL_WIDTHS[5],
-                bgcolor=ft.Colors.ORANGE_100,
+                bgcolor=ft.Colors.YELLOW_100,
             ),
         ],
         spacing=0,
