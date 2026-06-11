@@ -11,6 +11,14 @@ from db.cost_database import (
     delete_transport_cost,
     update_transport_cost,
 )
+from components.cost.transport_handlers import (
+    handle_add,
+    handle_edit,
+    handle_delete,
+)
+from components.others.sync_logic import is_sync, toggle_sync, should_sync
+from components.others.counter import build_counter
+from components.cost.common.rebuild_transport import rebuild_transport  # Transport 用に後で rename 予定
 
 TRAVEL_DB_PATH = "travel.db"
 COST_DB_PATH = "cost.db"
@@ -49,6 +57,20 @@ def TransportCostModePage(page, trip_id, clicked_date):
     trip_name = get_trip_name(trip_id) or "（名称未設定）"
     trip_total = get_transport_total_for_trip(trip_id)
 
+    # 追加行数カウンター
+    add_count = 1
+
+    def get_add_count():
+        return add_count
+
+    def set_add_count(v):
+        nonlocal add_count
+        add_count = v
+        page.update()
+
+    counter = build_counter(get_add_count, set_add_count)
+
+
     # 上部 UI
     top_buttons = ft.Row(
         [
@@ -66,6 +88,24 @@ def TransportCostModePage(page, trip_id, clicked_date):
         ft.Text("交通費専用モード", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK)
     ])
 
+    def build_sync_button():
+        mode = is_sync()
+        bg = ft.Colors.LIGHT_GREEN_200 if mode else ft.Colors.PINK_200
+
+        def on_toggle_sync(e):
+            toggle_sync()
+            rebuild_transport(page, trip_id, clicked_date)
+
+        return ft.ElevatedButton(
+            f"同期モード：{'ON' if mode else 'OFF'}",
+            bgcolor=bg,
+            color=ft.Colors.BLACK,
+            on_click=on_toggle_sync,
+            height=40,
+        )
+
+    sync_button = build_sync_button()
+
     title_row_2 = ft.Row(
         [
             ft.Text(
@@ -75,14 +115,42 @@ def TransportCostModePage(page, trip_id, clicked_date):
                 color=ft.Colors.BLACK,
                 expand=1,
             ),
+
+            sync_button,
+            counter,
+
+            ft.Container(width=20),  # スペーサー
+
             ft.Text(
                 f"交通費総額：{trip_total:,} 円",
                 size=20,
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.BLACK,
             ),
-        ]
+
+        ],
+        spacing=20,
     )
+
+    # handlers生成
+    add_handler = handle_add(page, trip_id, clicked_date)
+    edit_handler = handle_edit(page, trip_id, clicked_date)
+    delete_handler = handle_delete(page, trip_id, clicked_date)
+
+    def on_add_wrapper(date, count, _sync_flag_from_table):
+        sync_flag = should_sync("transport_cost", "add_row")
+        for _ in range(count):
+            add_handler(date, sync_flag)
+
+    def on_edit_wrapper(row_id, col, val, _sync_flag_from_table):
+        sync_flag = should_sync("transport_cost", "edit", col)
+        edit_handler(row_id, col, val, sync_flag)
+
+    def on_delete_wrapper(row_id, _sync_flag_from_table):
+        sync_flag = should_sync("transport_cost", "delete_row")
+        delete_handler(row_id, sync_flag)
+
+
 
     # 1日分の TransportCostTable
     table = TransportCostTable(
@@ -90,9 +158,10 @@ def TransportCostModePage(page, trip_id, clicked_date):
         trip_id=trip_id,
         date=clicked_date,
         rows=rows,
-        on_add=lambda: add_transport_cost(trip_id, clicked_date),
-        on_delete=lambda row_id: delete_transport_cost(row_id),
-        on_edit=lambda row_id, col, val: update_transport_cost(row_id, col, val),
+        on_add=on_add_wrapper,      # sync_flag は TransportCostPage 側で決める
+        on_delete=on_delete_wrapper,
+        on_edit=on_edit_wrapper,
+        get_add_count=get_add_count,  #カウンターを渡す
     )
 
     return ft.Column(

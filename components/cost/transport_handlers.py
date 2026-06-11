@@ -1,23 +1,25 @@
-# components/cost/cost_handlers.py
+# components/cost/transport_handlers.py
 
 from db.cost_database import (
-    update_other_cost,
-    add_other_cost,
-    delete_other_cost,
+    add_transport_cost,
+    update_transport_cost,
+    delete_transport_cost,
 )
-from components.cost.common.rebuild_cost import rebuild_cost
+from components.cost.common.rebuild_transport import rebuild_transport
 
 
 # ---------------------------------------------------------
 # 編集（on_edit）
 # ---------------------------------------------------------
-def handle_edit(page, trip_id, page_builder):
+def handle_edit(page, trip_id, clicked_date):
 
     def _edit(row_id, col, val, sync_flag):
-        update_other_cost(row_id, col, val)
+        # DB 更新
+        update_transport_cost(row_id, col, val)
 
+        # 同期ONのときだけページ再構築
         if sync_flag:
-            rebuild_cost(page, trip_id, page_builder)  # ★ 修正
+            rebuild_transport(page, trip_id, clicked_date)
 
     return _edit
 
@@ -25,13 +27,13 @@ def handle_edit(page, trip_id, page_builder):
 # ---------------------------------------------------------
 # 行追加（on_add）
 # ---------------------------------------------------------
-def handle_add(page, trip_id, page_builder):
+def handle_add(page, trip_id, clicked_date):
 
     def _add(date, sync_flag):
-        add_other_cost(trip_id, date)
+        add_transport_cost(trip_id, date)
 
         if sync_flag:
-            rebuild_cost(page, trip_id, page_builder)  # ★ 修正
+            rebuild_transport(page, trip_id, clicked_date)
 
     return _add
 
@@ -39,12 +41,12 @@ def handle_add(page, trip_id, page_builder):
 # ---------------------------------------------------------
 # 行削除（on_delete）
 # ---------------------------------------------------------
-def handle_delete(page, trip_id, page_builder):
+def handle_delete(page, trip_id, clicked_date):
 
     def _delete(row_id, sync_flag):
-        delete_other_cost(row_id)
+        delete_transport_cost(row_id)
 
         if sync_flag:
-            rebuild_cost(page, trip_id, page_builder)  # ★ 修正
+            rebuild_transport(page, trip_id, clicked_date)
 
     return _delete

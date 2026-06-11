@@ -43,7 +43,16 @@ TC_COLS = [
 ]
 
 
-def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
+def TransportCostTable(
+        page, 
+        trip_id, 
+        date, 
+        rows, 
+        on_add, 
+        on_delete, 
+        on_edit, 
+        get_add_count
+    ):
 
     table_rows = []
 
@@ -111,7 +120,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                         content=ft.IconButton(
                             icon=ft.Icons.ADD,
                             icon_color=ft.Colors.BLUE,
-                            on_click=lambda e: on_add(),
+                            on_click=lambda e, d=date: on_add(d, get_add_count(), False)  # ← とりあえず sync_flag は False（ページ側で上書き）,
                         ),
                         width=TC_COLS[0],
                         alignment=ft.alignment.center,
@@ -125,7 +134,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             bgcolor=ft.Colors.WHITE,
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_change=lambda e, rid=row_id: on_edit(rid, "category", e.control.value),
+                            on_change=lambda e, rid=row_id: on_edit(rid, "category", e.control.value, False),
                         ),
                         width=TC_COLS[1],
                     ),
@@ -146,7 +155,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             bgcolor=ft.Colors.WHITE,
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_change=lambda e, rid=row_id: on_edit(rid, "subcategory", e.control.value),
+                            on_change=lambda e, rid=row_id: on_edit(rid, "subcategory", e.control.value, False),
                         ),
                         width=TC_COLS[2],
                     ),
@@ -163,7 +172,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                                 (row["category"] == "船" and row["subcategory"] == "乗船券") or
                                 (row["category"] == "その他通行料等" and row["subcategory"] == "通行料")
                             ),
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "name", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "name", e.control.value, False),
                         ),
                         width=TC_COLS[3],
                     ),
@@ -175,7 +184,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             value=row["from_station"],
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "from_station", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "from_station", e.control.value, False),
                         ),
                         width=TC_COLS[4],
                     ),
@@ -187,7 +196,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             value=row["to_station"],
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "to_station", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "to_station", e.control.value, False),
                         ),
                         width=TC_COLS[5],
                     ),
@@ -199,7 +208,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             value=row["via"],
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "via", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "via", e.control.value, False),
                         ),
                         width=TC_COLS[6],
                     ),
@@ -211,7 +220,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             value=row["line"],
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "line", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "line", e.control.value, False),
                         ),
                         width=TC_COLS[7],
                     ),
@@ -224,7 +233,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             bgcolor=ft.Colors.WHITE,
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_change=lambda e, rid=row_id: on_edit(rid, "ticket_type", e.control.value),
+                            on_change=lambda e, rid=row_id: on_edit(rid, "ticket_type", e.control.value, False),
                         ),
                         width=TC_COLS[8],
                     ),
@@ -237,7 +246,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                             text_align=ft.TextAlign.RIGHT,
                             color=ft.Colors.BLACK,
                             border=ft.InputBorder.NONE,     # ← 追加
-                            on_blur=lambda e, rid=row_id: on_edit(rid, "amount", e.control.value),
+                            on_blur=lambda e, rid=row_id: on_edit(rid, "amount", e.control.value, False),
                         ),
                         width=TC_COLS[9],
                     ),
@@ -254,7 +263,7 @@ def TransportCostTable(page, trip_id, date, rows, on_add, on_delete, on_edit):
                         content=ft.IconButton(
                             icon=ft.Icons.DELETE,
                             icon_color=ft.Colors.RED,
-                            on_click=lambda e, rid=row_id: on_delete(rid),
+                            on_click=lambda e, rid=row_id: on_delete(rid, False),
                         ),
                         width=TC_COLS[11],
                         alignment=ft.alignment.center,

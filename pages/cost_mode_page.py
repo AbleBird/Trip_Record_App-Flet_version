@@ -15,6 +15,7 @@ from components.others.counter import build_counter
 from utils.number import to_int
 from components.others.sync_logic import is_sync, toggle_sync, should_sync
 from components.cost.common.rebuild_cost import rebuild_cost
+from components.cost.common.cost_elements import COL_WIDTHS
 
 TRAVEL_DB_PATH = "travel.db"
 
@@ -192,7 +193,7 @@ def CostModePage(page, trip_id):
     # -----------------------------------------------------
     # handlers 生成（★ on_add を count 対応に修正）
     # -----------------------------------------------------
-    edit_handler = handle_edit(page, grouped_rows, transport_totals, date_list, trip_id, CostModePage)
+    edit_handler = handle_edit(page, trip_id, CostModePage)
     delete_handler = handle_delete(page, trip_id, CostModePage)
     add_handler = handle_add(page, trip_id, CostModePage)
 
@@ -212,6 +213,32 @@ def CostModePage(page, trip_id):
         for _ in range(count):
             add_handler(date, sync_flag)
 
+    # ヘッダーとして設置
+    header_row = ft.Row(
+        [
+            ft.Text(
+                "詳細を入力",
+                size=24,
+                weight=ft.FontWeight.BOLD,
+                color=ft.Colors.BLACK,
+                width=COL_WIDTHS[0] + COL_WIDTHS[1],
+            ),
+
+            sync_button,
+
+            counter,
+
+            ft.TextField(
+                value="日本円/JPY",
+                width=180,
+                height=40,
+                text_align=ft.TextAlign.RIGHT,
+                color=ft.Colors.BLACK,
+            ),
+        ],
+        spacing=20,
+    )
+
     # -----------------------------------------------------
     # 詳細入力テーブル
     # -----------------------------------------------------
@@ -226,8 +253,6 @@ def CostModePage(page, trip_id):
         on_edit=on_edit_wrapper,
         on_open_transport=lambda d: page.go(f"/trip/{trip_id}/cost/transport/{d}"),
         get_add_count=get_add_count,
-        counter_control=counter,   # ★ ここで渡す
-        sync_control=sync_button,      # ← 追加
     )
 
     # CostTable 部分だけをスクロールさせる Column にする
@@ -244,15 +269,20 @@ def CostModePage(page, trip_id):
             top_buttons,
             title_row,
             trip_info_row,
-            ft.Divider(height=10),
+            # ft.Divider(height=10),
 
             # クロス表は固定
             build_cross_table(grouped_rows, transport_totals),
+
+            # ★ クロス表の後にヘッダーを置く（ここが重要）
+            header_row,
 
             # TripTopPage と同じ構造でスクロール領域を作る
             ft.Container(
                 content=detail_scroll,
                 expand=True,
+                padding=0, 
+                margin=0,
             ),
         ],
     )

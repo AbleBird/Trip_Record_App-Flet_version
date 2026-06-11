@@ -7,7 +7,6 @@ from components.cost.cost_rows import (
 )
 from components.cost.common.cost_elements import cell
 from components.cost.common.cost_elements import COL_WIDTHS, TYPE_OPTIONS
-from components.others.sync_logic import should_sync
 
 PLUS_COL_WIDTH = 50
 
@@ -23,8 +22,6 @@ def CostTable(
     on_edit=None,
     on_open_transport=None,
     get_add_count=None,
-    counter_control=None,
-    sync_control=None,   # ← 追加
 ):
 
     # -------------------------
@@ -35,10 +32,10 @@ def CostTable(
             content=ft.IconButton(
                 icon=ft.Icons.ADD,
                 icon_color=ft.Colors.BLUE,
-                on_click=lambda e: on_add(
-                    date,
+                on_click=lambda e, d=date: on_add(
+                    d,
                     get_add_count() if get_add_count else 1,
-                    should_sync("cost_mode", "add_row")
+                    False,   # sync_flag は CostModePage 側で決める
                 ),
             ),
             width=PLUS_COL_WIDTH,
@@ -49,50 +46,50 @@ def CostTable(
     # -------------------------
     # Table 外のヘッダー
     # -------------------------
-    header_controls = ft.Row(
-        [
-            # 左：詳細を入力（col0 + col1）
-            ft.Container(
-                content=ft.Text(
-                    "詳細を入力",
-                    size=24,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.Colors.BLACK,
-                ),
-                width=COL_WIDTHS[0] + COL_WIDTHS[1],
-                alignment=ft.alignment.center_left,
-            ),
+    # header_controls = ft.Row(
+    #     [
+    #         # 左：詳細を入力（col0 + col1）
+    #         ft.Container(
+    #             content=ft.Text(
+    #                 "詳細を入力",
+    #                 size=24,
+    #                 weight=ft.FontWeight.BOLD,
+    #                 color=ft.Colors.BLACK,
+    #             ),
+    #             width=COL_WIDTHS[0] + COL_WIDTHS[1],
+    #             alignment=ft.alignment.center_left,
+    #         ),
 
-            # 中央左：同期ON/OFFボタン（col2）
-            ft.Container(
-                content=sync_control if sync_control else ft.Container(),
-                width=COL_WIDTHS[2],
-                alignment=ft.alignment.center,
-            ),
+    #         # 中央左：同期ON/OFFボタン（col2）
+    #         ft.Container(
+    #             content=sync_control if sync_control else ft.Container(),
+    #             width=COL_WIDTHS[2],
+    #             alignment=ft.alignment.center,
+    #         ),
 
-            # 中央右：カウンター（col3）
-            ft.Container(
-                content=counter_control if counter_control else ft.Container(),
-                width=COL_WIDTHS[3],
-                alignment=ft.alignment.center,
-            ),
+    #         # 中央右：カウンター（col3）
+    #         ft.Container(
+    #             content=counter_control if counter_control else ft.Container(),
+    #             width=COL_WIDTHS[3],
+    #             alignment=ft.alignment.center,
+    #         ),
 
-            # 右：金額UNIT（＋列 + col4 + col5）
-            ft.Container(
-                content=ft.TextField(
-                    value=currency,
-                    width=180,
-                    height=40,
-                    text_align=ft.TextAlign.RIGHT,
-                    color=ft.Colors.BLACK,
-                ),
-                width=PLUS_COL_WIDTH + COL_WIDTHS[4] + COL_WIDTHS[5],
-                alignment=ft.alignment.center_right,
-            ),
-        ],
-        spacing=0,
-        expand=True,   # ★ Row 全体を横いっぱいに広げる
-    )
+    #         # 右：金額UNIT（＋列 + col4 + col5）
+    #         ft.Container(
+    #             content=ft.TextField(
+    #                 value=currency,
+    #                 width=180,
+    #                 height=40,
+    #                 text_align=ft.TextAlign.RIGHT,
+    #                 color=ft.Colors.BLACK,
+    #             ),
+    #             width=PLUS_COL_WIDTH + COL_WIDTHS[4] + COL_WIDTHS[5],
+    #             alignment=ft.alignment.center_right,
+    #         ),
+    #     ],
+    #     spacing=0,
+    #     expand=True,   # ★ Row 全体を横いっぱいに広げる
+    # )
 
 
     # -------------------------
@@ -187,7 +184,7 @@ def CostTable(
 
     return ft.Column(
         [
-            header_controls,
+            # header_controls,
             ft.Column(table_rows, spacing=0),
         ],
         spacing=10,
