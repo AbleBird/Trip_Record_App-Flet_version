@@ -2,6 +2,17 @@
 
 import flet as ft
 from components.toppage.table_logic import should_collapse, should_show_collapsed_row, build_collapsed_row
+from components.toppage.basic_cells import (
+    planned_time_cell,
+    actual_time_cell,
+    place_cell,
+    by_cell,
+    point_cell,
+    note_cell,
+    image_cell,
+    video_cell,
+)
+
 
 print("BasicTable loaded from:", __file__)
 
@@ -14,9 +25,12 @@ def BasicTable(
     hide_middle=False,
     expand_target=None,
     on_show_middle=None,
-    add_count_getter=None,   # ★ 追加
-    set_add_count=None,   # ★ setter
+    add_count_getter=None,
+    set_add_count=None,
+    on_point_tap=None,
+    on_fix_dates=None,   # ★ 追加
 ):
+
 
     def safe(v):
         return "" if v in (None, "None") else str(v)
@@ -78,6 +92,17 @@ def BasicTable(
             + empty_cells
             + [delete_cell],
             spacing=0,
+        )
+    
+    # 日付修正
+    def build_fix_button(i):
+        if on_fix_dates is None:
+            return ft.Container()  # 何もしないダミー
+        return ft.IconButton(
+            icon=ft.Icons.BUILD,
+            icon_color=ft.Colors.ORANGE,
+            tooltip="日付修正",
+            on_click=lambda e: on_fix_dates(),   #TripTopPageに渡す
         )
 
     # -------------------------
@@ -145,12 +170,38 @@ def BasicTable(
             )
 
             date_cell = ft.Container(
-                content=ft.Text(safe(row.get("planned_time")), size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                content=ft.Row(
+                    [
+                        # 左側：日付テキスト
+                        ft.Container(
+                            content=ft.Text(
+                                safe(row.get("planned_time")),
+                                size=14,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.BLACK,
+                            ),
+                            width=col_widths[2] + col_widths[3] + col_widths[4] + col_widths[5],
+                            alignment=ft.alignment.center_left,
+                            padding=10,
+                        ),
+
+                        # ★ Point 列に fix ボタン
+                        ft.Container(
+                            content=build_fix_button(i),
+                            width=col_widths[6],
+                            alignment=ft.alignment.center,
+                        ),
+
+                        # 残りの note / image / video 列
+                        ft.Container(width=col_widths[7]),
+                        ft.Container(width=col_widths[8]),
+                        ft.Container(width=col_widths[9]),
+                    ],
+                    spacing=0,
+                ),
                 width=sum(col_widths[2:-1]),
                 height=48,
                 bgcolor=ft.Colors.GREY_200,
-                alignment=ft.alignment.center_left,
-                padding=10,
                 border=ft.border.all(1, ft.Colors.BLACK),
             )
 
@@ -198,64 +249,17 @@ def BasicTable(
         # -------------------------
         event_cells = [
             type_cell,
-            ft.TextField(
-                value=safe(row.get("planned_time")),
-                width=col_widths[2],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "planned_time", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("actual_time")),
-                width=col_widths[3],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "actual_time", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("place")),
-                width=col_widths[4],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "place", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("by")),
-                width=col_widths[5],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "by", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("point")),
-                width=col_widths[6],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "point", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("note")),
-                width=col_widths[7],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "note", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("image")),
-                width=col_widths[8],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "image", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
-            ft.TextField(
-                value=safe(row.get("video")),
-                width=col_widths[9],
-                height=48,
-                on_blur=lambda e, idx=i: on_edit(idx, "video", e.control.value),
-                color=ft.Colors.BLACK,
-            ),
+            planned_time_cell(row, col_widths[2], on_edit, i),
+            actual_time_cell(row, col_widths[3], on_edit, i),
+            place_cell(row, col_widths[4], on_edit, i),
+            by_cell(row, col_widths[5], on_edit, i),
+            point_cell(row, col_widths[6], on_edit, i),
+            note_cell(row, col_widths[7], on_edit, i),
+            image_cell(row, col_widths[8], on_edit, i),
+            video_cell(row, col_widths[9], on_edit, i),
         ]
 
+        # 削除ボタン
         delete_cell = ft.Container(
             content=ft.IconButton(
                 icon=ft.Icons.DELETE,
@@ -284,5 +288,8 @@ def BasicTable(
 
     # 最下行に 2 つ並べる
     table_rows.append(ft.Row([last_plus], spacing=10))
+
+    # debug用
+    print("BasicTable rendered")
 
     return ft.ListView(controls=table_rows, spacing=0, expand=True)

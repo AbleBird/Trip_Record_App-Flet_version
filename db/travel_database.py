@@ -49,3 +49,14 @@ def init_travel_db():
 
     conn.commit()
     conn.close()
+
+# Point欄拡張
+def update_point(row_id: int, new_text: str):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE trip_rows SET point = ? WHERE id = ?",
+        (new_text, row_id)
+    )
+    conn.commit()
+    conn.close()

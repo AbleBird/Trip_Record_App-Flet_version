@@ -43,54 +43,6 @@ def CostTable(
             alignment=ft.alignment.center,
         )
 
-    # -------------------------
-    # Table 外のヘッダー
-    # -------------------------
-    # header_controls = ft.Row(
-    #     [
-    #         # 左：詳細を入力（col0 + col1）
-    #         ft.Container(
-    #             content=ft.Text(
-    #                 "詳細を入力",
-    #                 size=24,
-    #                 weight=ft.FontWeight.BOLD,
-    #                 color=ft.Colors.BLACK,
-    #             ),
-    #             width=COL_WIDTHS[0] + COL_WIDTHS[1],
-    #             alignment=ft.alignment.center_left,
-    #         ),
-
-    #         # 中央左：同期ON/OFFボタン（col2）
-    #         ft.Container(
-    #             content=sync_control if sync_control else ft.Container(),
-    #             width=COL_WIDTHS[2],
-    #             alignment=ft.alignment.center,
-    #         ),
-
-    #         # 中央右：カウンター（col3）
-    #         ft.Container(
-    #             content=counter_control if counter_control else ft.Container(),
-    #             width=COL_WIDTHS[3],
-    #             alignment=ft.alignment.center,
-    #         ),
-
-    #         # 右：金額UNIT（＋列 + col4 + col5）
-    #         ft.Container(
-    #             content=ft.TextField(
-    #                 value=currency,
-    #                 width=180,
-    #                 height=40,
-    #                 text_align=ft.TextAlign.RIGHT,
-    #                 color=ft.Colors.BLACK,
-    #             ),
-    #             width=PLUS_COL_WIDTH + COL_WIDTHS[4] + COL_WIDTHS[5],
-    #             alignment=ft.alignment.center_right,
-    #         ),
-    #     ],
-    #     spacing=0,
-    #     expand=True,   # ★ Row 全体を横いっぱいに広げる
-    # )
-
 
     # -------------------------
     # Table 本体

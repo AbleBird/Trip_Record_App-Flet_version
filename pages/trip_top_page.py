@@ -6,6 +6,7 @@ from components.toppage import row_manager
 from components.toppage.table_state import init_state, toggle_middle, show_middle, rebuild
 from components.others.sync_logic import is_sync, toggle_sync, should_sync
 from components.others.counter import build_counter
+from components.others.fix_dates import fix_dates_for_trip
 
 # ---------------------------------------------------------
 # Trip名取得
@@ -183,11 +184,18 @@ def TripTopPage(page: ft.Page, trip_id: int):
                 on_show_middle=on_show,
                 add_count_getter=get_add_count,    # ★ 必須
                 set_add_count=set_add_count,   # ← これが必須
+                on_fix_dates=lambda: (
+                    fix_dates_for_trip(trip_id),
+                    rebuild(page, trip_id, TripTopPage)
+                )
             )
         ],
         expand=True,
         scroll=ft.ScrollMode.AUTO,
     )
+
+    # debug
+    print("TripTopPage rendered")
 
     # -----------------------------------------------------
     # ★ レイアウト
@@ -207,10 +215,7 @@ def TripTopPage(page: ft.Page, trip_id: int):
                 alignment=ft.MainAxisAlignment.START,
                 spacing=20,
             ),
-            ft.Container(
-                content=table,
-                expand=True,
-            ),
+            ft.Container(content=table, expand=True),
         ],
         expand=True,
     )

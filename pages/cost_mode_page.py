@@ -3,7 +3,8 @@
 import flet as ft
 import sqlite3
 from components.cost.cost_table import CostTable
-from db.cost_database import get_other_costs, get_transport_totals
+from db.cost_database import get_other_costs, add_other_cost
+from db.transport_database import get_transport_totals
 from components.cost.cost_handlers import (
     handle_edit,
     handle_add,
@@ -80,6 +81,19 @@ def CostModePage(page, trip_id):
     # -----------------------------------------------------
     other_costs = sanitize_cost_rows(get_other_costs(trip_id))
     transport_totals = get_transport_totals(trip_id)
+
+    # ★ ここから追加：date_list に対して other_costs が 1 行もない日付には初期行を作る
+    missing_dates = {
+        d for d in date_list
+        if not any(r["date"] == d for r in other_costs)
+    }
+
+    if missing_dates:
+        for d in missing_dates:
+            add_other_cost(trip_id, d)
+
+        # 追加したので取り直す
+        other_costs = sanitize_cost_rows(get_other_costs(trip_id))
 
     for d in list(transport_totals.keys()):
         try:
@@ -186,7 +200,7 @@ def CostModePage(page, trip_id):
                 alignment=ft.alignment.center_right,
             ),
         ],
-        spacing=20,
+        spacing=0,
     )
 
 
@@ -224,13 +238,16 @@ def CostModePage(page, trip_id):
                 width=COL_WIDTHS[0] + COL_WIDTHS[1],
             ),
 
+            # ← このダミー幅を調整して sync_button の位置を合わせる
+            ft.Container(width=110),
+
             sync_button,
 
             counter,
 
             ft.TextField(
                 value="日本円/JPY",
-                width=180,
+                width=COL_WIDTHS[5],
                 height=40,
                 text_align=ft.TextAlign.RIGHT,
                 color=ft.Colors.BLACK,

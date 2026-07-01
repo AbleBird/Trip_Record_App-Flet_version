@@ -13,10 +13,7 @@ def main(page: ft.Page):
     init_travel_db()
     init_cost_db()
 
-    # ページ全体の背景を白に
     page.bgcolor = ft.Colors.WHITE
-
-    # テーマも白背景・黒文字に統一
     page.theme = ft.Theme(
         color_scheme=ft.ColorScheme(
             primary=ft.Colors.BLACK,
@@ -30,27 +27,17 @@ def main(page: ft.Page):
         print("ROUTE:", page.route)
         page.views.clear()
 
-        # ホーム画面
+        # ホーム
         if page.route == "/":
             page.views.append(
-                ft.View(
-                    "/",
-                    controls=[HomePage(page)],
-                    bgcolor=ft.Colors.WHITE,
-                )
+                ft.View("/", controls=[HomePage(page)], bgcolor=ft.Colors.WHITE)
             )
 
-        # ★ 交通費専用モード
+        # 交通費モード
         elif "/cost/transport/" in page.route:
-            try:
-                parts = page.route.split("/")
-                trip_id = int(parts[2])
-                date = "/".join(parts[5:8])
-
-            except Exception as e:
-                print("Transport route parse error:", e)
-                trip_id = None
-                date = None
+            parts = page.route.split("/")
+            trip_id = int(parts[2])
+            date = "/".join(parts[5:8])
 
             page.views.append(
                 ft.View(
@@ -60,40 +47,31 @@ def main(page: ft.Page):
                 )
             )
 
-        # ★ まず cost モードを先に判定
+        # cost モード
         elif page.route.startswith("/trip/") and page.route.endswith("/cost"):
-            try:
-                trip_id = int(page.route.split("/")[2])
-            except:
-                trip_id = None
-
+            trip_id = int(page.route.split("/")[2])
             page.views.append(
                 ft.View(
-                    route=f"/trip/{trip_id}/cost",
+                    route=page.route,
                     controls=[CostModePage(page, trip_id)],
                     bgcolor=ft.Colors.WHITE,
                 )
             )
 
-        # ★ 次に TripTopPage（/trip/<id>）
+        # TripTopPage
         elif page.route.startswith("/trip/"):
-            try:
-                trip_id = int(page.route.split("/")[2])
-            except:
-                trip_id = None
-
+            trip_id = int(page.route.split("/")[2])
             page.views.append(
                 ft.View(
-                    route=f"/trip/{trip_id}",
+                    route=page.route,
                     controls=[TripTopPage(page, trip_id)],
                     bgcolor=ft.Colors.WHITE,
                 )
             )
 
         page.update()
-            
-    page.on_route_change = route_change
 
+    page.on_route_change = route_change
     page.go("/")
 
 ft.app(target=main)

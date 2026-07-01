@@ -221,3 +221,20 @@ def sanitize_rows(rows):
         })
 
     return result
+
+def fetch_point(row_id: int) -> str:
+    import sqlite3
+    conn = sqlite3.connect("travel.db")
+    cur = conn.cursor()
+    cur.execute("SELECT point FROM trip_rows WHERE id = ?", (row_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row and row[0] else ""
+
+def update_point(row_id: int, new_text: str):
+    import sqlite3
+    conn = sqlite3.connect("travel.db")
+    cur = conn.cursor()
+    cur.execute("UPDATE trip_rows SET point = ? WHERE id = ?", (new_text, row_id))
+    conn.commit()
+    conn.close()

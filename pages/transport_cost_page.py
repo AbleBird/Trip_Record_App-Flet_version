@@ -4,7 +4,7 @@ import flet as ft
 import sqlite3
 
 from components.cost.transport_cost_table import TransportCostTable
-from db.cost_database import (
+from db.transport_database import (
     get_transport_costs_by_date,
     get_transport_total_for_trip,
     add_transport_cost,

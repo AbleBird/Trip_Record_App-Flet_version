@@ -1,6 +1,13 @@
 # components/home_logic.py
 
 import sqlite3
+from db.transport_database import init_transport_rows_for_trip
+from db.cost_database import init_other_cost_rows_for_trip
+from db.transport_database import delete_transport_costs_for_trip
+from db.cost_database import delete_other_costs_for_trip
+from components.others.date_manager import insert_date_rows
+from components.others.sync_dates import sync_cost_dates
+
 DB_PATH = "travel.db"
 
 
@@ -62,23 +69,53 @@ def fetch_trips(sort_desc: bool):
 def add_trip_to_db(display_name, ds, de):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+
     cur.execute(
         "INSERT INTO trips (name, date_start, date_end, hidden) VALUES (?, ?, ?, 0)",
         (display_name, ds, de),
     )
+    trip_id = cur.lastrowid
     conn.commit()
     conn.close()
 
+    # ★ travel.db 側の日付行生成（最重要）
+    insert_date_rows(trip_id)
+
+    # ★ cost.db 側の初期行生成
+    init_transport_rows_for_trip(trip_id)
+    init_other_cost_rows_for_trip(trip_id)
+
 
 # -------------------------
-# Trip名変更
+# Trip名変更（travel.db のみ）
 # -------------------------
 def rename_trip(trip_id, new_name):
+    import re
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+
     cur.execute("UPDATE trips SET name = ? WHERE id = ?", (new_name, trip_id))
+
+    m = re.match(r"(\d{4}/\d{2}/\d{2})(?:〜(\d{4}/\d{2}/\d{2}|\d{2}/\d{2}))?", new_name)
+
+    if m:
+        ds = m.group(1)
+        de = m.group(2) if m.group(2) else ds
+
+        if len(de) == 5:
+            year = ds.split("/")[0]
+            de = f"{year}/{de}"
+
+        cur.execute(
+            "UPDATE trips SET date_start = ?, date_end = ? WHERE id = ?",
+            (ds, de, trip_id)
+        )
+
     conn.commit()
     conn.close()
+
+    # 基本は自動で同期
+    sync_cost_dates(trip_id)
 
 
 # -------------------------
@@ -99,14 +136,17 @@ def delete_trip(trip_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # trip_rows を先に削除
+    # travel.db 側
     cur.execute("DELETE FROM trip_rows WHERE trip_id = ?", (trip_id,))
-
-    # trips を削除
     cur.execute("DELETE FROM trips WHERE id = ?", (trip_id,))
 
     conn.commit()
     conn.close()
+
+    # ★ cost.db 側も削除
+    delete_transport_costs_for_trip(trip_id)
+    delete_other_costs_for_trip(trip_id)
+
 
 # -------------------------
 # 全て非表示/表示

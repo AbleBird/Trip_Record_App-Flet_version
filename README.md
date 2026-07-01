@@ -32,4 +32,8 @@ Sort logic: Discontinued
 ### June 9, 2026
 All Pages: Made some adjustment to the colors
 
+### July 1, 2026
+Selectable sync logic added for all pages
+Date Update correction bug (for Cost-related pages): fixed
+
 ## How to use
