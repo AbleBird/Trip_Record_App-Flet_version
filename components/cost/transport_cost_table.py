@@ -110,7 +110,13 @@ def TransportCostTable(
 
     for row in rows:
         row_id = row["id"]
-        cumulative += row["amount"]
+
+        # ★ 金額を必ず int に変換
+        try:
+            cumulative += int(row["amount"])
+        except:
+            cumulative += 0
+
 
         table_rows.append(
             ft.Row(
